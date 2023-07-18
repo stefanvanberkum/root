@@ -53,6 +53,9 @@ ROOT_STANDARD_LIBRARY_PACKAGE(ROOTTMVASofie
    TMVA/RFunction_MLP.hxx
    TMVA/RFunction_Sum.hxx
    TMVA/RFunction_Mean.hxx
+
+   TMVA/TorchGNN/RModel_TorchGNN.hxx
+   TMVA/TorchGNN/RModule.hxx
   SOURCES
     src/RModel_Base.cxx
     src/RModel.cxx
