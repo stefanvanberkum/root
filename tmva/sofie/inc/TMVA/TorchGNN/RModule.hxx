@@ -5,11 +5,10 @@
  * can be layers, activations, or generic operations.
 */
 
-#ifndef TMVA_SOFIE_RMODULE
-#define TMVA_SOFIE_RMODULE
+#ifndef TMVA_SOFIE_RMODULE_H_
+#define TMVA_SOFIE_RMODULE_H_
 
-#include <string>
-#include <SOFIE_common.hxx>
+#include "TMVA/SOFIE_common.hxx"
 
 namespace TMVA {
 namespace Experimental {
@@ -17,38 +16,48 @@ namespace SOFIE {
 
 class RModule {
     public:
-        // TODO: What do these do? Can they be removed?
-        RModule(){}
-        virtual ~RModule(){}
+        virtual ~RModule() = default;
 
-        // Module name is set to operation name.
-        RModule(std::string new_op):
-            op_type(UTILITY::Clean_name(new_op)), name(UTILITY::Clean_name(new_op)){}
+        void initialize(std::vector<std::shared_ptr<RModule>> module_list, std::map<std::string, int> module_map) {
+            /**
+             * Initialize the RModule by binding it to its input modules.
+             * 
+             * @param module_list Vector containing the modules.
+             * @param module_map Map from module name to module index (in modules).
+            */
 
-        // Manual name.
-        RModule(std::string new_op, std::string new_name):
-            op_type(UTILITY::Clean_name(new_op)), name(UTILITY::Clean_name(new_name)){}
+            for (std::string input: inputs) {
+                input_modules.push_back(module_list[module_map[input]]);
+            }
+        }
 
-        std::string getOperation() {return op_type;}
-        std::string setName(std::string new_name) {name = new_name;}
-        std::string getName() {return name;}
+        void execute() {
+            /**
+             * Execute the module.
+             * 
+             * This triggers the module's forward method and stores the output.
+            */
+
+            std::vector<float> out = forward();
+            output = out;
+        }
+
+        virtual std::vector<float> forward() = 0;  // Forward method to be implemented by each module.
+
+        void setName(std::string new_name) {name = new_name;}  // Change this module's name.
+        std::string getName() {return name;}  // Get this module's name.
+
+        std::vector<float> getOutput() {return output;}  // Get output of last call.
     protected:
-        ModuleType op_type;  // Operation type.
-        std::string name;  // Module name.
-};
-
-enum class ModuleType {
-    Linear,
-    GCNConv,
-    GATConv,
-    relu,
-    global_mean_pool,
-    reshape,
-    cat
+        std::vector<std::shared_ptr<RModule>> input_modules;  // Vector of input modules.
+        std::vector<std::string> inputs;  // Input names.
+    private:
+        std::string name;  // Module name.  
+        std::vector<float> output;  // Output of last call.
 };
 
 }  // TMVA.
 }  // Experimental.
 }  // SOFIE.
 
-#endif // TMVA_SOFIE_RMODULE.
+#endif  // TMVA_SOFIE_RMODULE_H_

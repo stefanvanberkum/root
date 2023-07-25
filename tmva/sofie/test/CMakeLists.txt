@@ -171,3 +171,17 @@ target_link_libraries(emitGraphIndependent ROOTTMVASofie)
 set_target_properties(emitGraphIndependent PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
 ## silence protobuf warnings seen in version 3.0 and 3.6. Not needed from protobuf version 3.17
 target_compile_options(emitGraphIndependent PRIVATE -Wno-unused-parameter -Wno-array-bounds)
+
+add_executable(torchGNN
+              TorchGNN/BasicTest.cxx
+              )
+target_include_directories(torchGNN PRIVATE
+    ${CMAKE_SOURCE_DIR}/tmva/sofie/inc
+    ${CMAKE_SOURCE_DIR}/tmva/inc
+    ${CMAKE_SOURCE_DIR}/core/foundation/inc
+    ${CMAKE_BINARY_DIR}/ginclude   # this is for RConfigure.h
+)
+target_link_libraries(torchGNN ROOTTMVASofie)
+set_target_properties(torchGNN PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
+## silence protobuf warnings seen in version 3.0 and 3.6. Not needed from protobuf version 3.17
+target_compile_options(emitGraphIndependent PRIVATE -Wno-unused-parameter -Wno-array-bounds)
