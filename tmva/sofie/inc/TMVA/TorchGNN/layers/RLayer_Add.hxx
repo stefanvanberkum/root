@@ -14,31 +14,31 @@ namespace SOFIE {
 
 class RLayer_Add: public RModule {
     public:
+        /**
+         * Construct the addition layer.
+         * 
+         * @param a The first argument.
+         * @param b The second argument.
+        */
         RLayer_Add(std::string a, std::string b) {
-            /**
-             * Construct the addition layer.
-             * 
-             * @param a The first argument.
-             * @param b The second argument.
-            */
-            
             inputs = {a, b};
         }
 
-        std::vector<float> forward() {
-            /**
-             * Add the arguments a and b.
-             * 
-             * @returns Result (a + b).
-            */
+        /** Destruct the module. */
+        ~RLayer_Add() {};
 
+        /**
+         * Add the arguments a and b.
+         * 
+         * @returns Result (a + b).
+        */
+        std::vector<float> forward() {
             std::vector<float> a = input_modules[0] -> getOutput();
             std::vector<float> b = input_modules[1] -> getOutput();
 
-            float alpha = 1;
             int n = a.size();
 
-            cblas_caxpy(n, &alpha, a.data(), 1, b.data(), 1);
+            cblas_saxpy(n, 1, a.data(), 1, b.data(), 1);
 
             return b;
         }

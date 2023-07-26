@@ -9,25 +9,12 @@
 
 #include "TMVA/TorchGNN/RModule.hxx"
 #include "TMVA/TorchGNN/layers/RLayer_Input.hxx"
+#include <tuple>
+#include <iostream>
+#include <filesystem>
+#include <fstream>
 
-// Forward method loops through forward list.
-                // While evaluating, it stores only those intermediate outputs
-                // that are required in a map: if (index != last) {add to those
-                // that should be stored}. Always store last output.
-                
-                // When a module is called, the corresponding input is fetched
-                // and fed through the module. Private RModule attribute?
-
-                // Final output is returned.
-
-            // Input index for each module is stored somewhere, by default it's
-            // module_count (the output of the previous module). But index or
-            // module name can be set manually. if (input=="") {use count} else
-            // {find corresponding index}.
-
-            // Save RModel_TorchGNN using WriteTObject?
-
-            // User-convenience script in Python to convert tensors to BLAS?
+// TODO: User-convenience script in Python to convert tensors to float vector?
 
 namespace TMVA {
 namespace Experimental {
@@ -35,15 +22,15 @@ namespace SOFIE {
 
 class RModel_TorchGNN {
     public:
+        /** Model constructor without inputs. */
         RModel_TorchGNN() {}
 
+        /**
+         * Model constructor with manual input names.
+         * 
+         * @param input_names Vector of input names.
+        */
         RModel_TorchGNN(std::vector<std::string> input_names) {
-            /**
-             * RModel constructor with manual input names.
-             * 
-             * @param input_names Vector of input names.
-            */
-
             inputs = input_names;
 
             // Generate input layers.
@@ -51,6 +38,7 @@ class RModel_TorchGNN {
                 addModule(std::make_shared<RLayer_Input>(), name);
             }
         }
+
         //RModel_TorchGNN(std::vector<std::string> input_names, std::vector<std::string> module_list) {
             // TODO: Initialize modules directly.
         //}
@@ -58,24 +46,28 @@ class RModel_TorchGNN {
             // TODO: Initialize modules directly and add weights.
         //}
 
+        /**
+         * Add a module to the module list.
+         * 
+         * @param module Module to add.
+         * @param name Module name. Defaults to the module type with a count
+         * value (e.g., GCNConv_1).
+        */
         void addModule(std::shared_ptr<RModule> module, std::string name="") {
-            /**
-             * Add a module to the module list.
-             * 
-             * @param module Module to add.
-             * @param name Module name. Defaults to the module type with a count
-             * value (e.g., GCNConv_1).
-            */
-           
             std::string new_name = (name == "") ? typeid(module).name() : name;
             if (auto search = module_counts.find(new_name); search != module_counts.end()) {
-                // Module exists, so increment count.
+                // Module exists, so add discriminator and increment count.
+                new_name += "_" + std::to_string(module_counts[new_name]);
                 module_counts[new_name]++;
+
+                if (name != "") {
+                    // Issue warning.
+                    std::cout << "WARNING: Module with name \"" << name << "\" renamed to \"" << new_name << "\"." << std::endl;
+                }
             } else {
                 // First module of its kind.
                 module_counts[new_name] = 1;
             }
-            new_name += "_" + std::to_string(module_counts[new_name]);
             module -> setName(new_name);
 
             // Initialize the module.
@@ -87,21 +79,22 @@ class RModel_TorchGNN {
             module_count++;
         }
         
+        /**
+         * Run the forward function.
+         * 
+         * @param args Any number of input arguments.
+         * @returns The output of the last layer.
+        */
         template<class... Types>
         std::vector<float> forward(Types... args) {
-            /**
-             * Run the forward function.
-             * 
-             * @param args Any number of input arguments.
-             * @returns The output of the last layer.
-            */
             auto input = make_tuple(args...);
-            std::size_t n_inputs = std::tuple_size<decltype(input)>{};
 
             // Instantiate input layers.
-            for (int i = 0; i < n_inputs; i++) {
-                std::dynamic_pointer_cast<RLayer_Input>(modules[i]) -> setParams(std::get<i>(input));
-            }
+            int k = 0;
+            std::apply(
+                [&](auto&... in) {
+                    ((std::dynamic_pointer_cast<RLayer_Input>(modules[k++]) -> setParams(in)), ...);
+                }, input);
 
             // Loop through and execute modules.
             for (std::shared_ptr<RModule> module: modules) {
@@ -112,11 +105,45 @@ class RModel_TorchGNN {
             return modules.back() -> getOutput();
         }
 
+        /**
+         * Save the model as standalone inference code.
+         * 
+         * @param path Path to save location.
+         * @param name Model name.
+         * @param overwrite True if any existing directory should be
+         * overwritten. Defaults to false.
+        */
+        void save(std::string path, std::string name, bool overwrite=false) {
+            std::filesystem::copy_options copyOptions;
+            if (overwrite) {
+                copyOptions = std::filesystem::copy_options::overwrite_existing | std::filesystem::copy_options::recursive;
+            } else {
+                copyOptions = std::filesystem::copy_options::recursive;
+            }
+
+            // Copy methods.
+            std::string dir = path + "/" + name;
+            std::filesystem::copy("TMVA/TorchGNN", dir, copyOptions);
+
+            // Iterate over the files to fix the namespaces.
+            std::filesystem::recursive_directory_iterator file_iter = std::filesystem::recursive_directory_iterator(dir);
+            for (const std::filesystem::directory_entry& entry : file_iter) {
+                // Load file.
+                std::ifstream fin;
+                fin.open(entry.path());
+
+                // Create a temporary file.
+                std::ofstream temp;
+                std::filesystem::path temp_path = entry.path();
+                temp_path.replace_filename("temp");
+                temp.open(temp_path);
+            } 
+        }
     private:
-        std::vector<std::string> inputs;  // Input names.
+        std::vector<std::string> inputs;  // Vector of input names.
         std::map<std::string, int> module_counts;  // Map from module name to number of occurrences.
         std::vector<std::shared_ptr<RModule>> modules;  // Vector containing the modules.
-        std::map<std::string, int> module_map; // Map from module name to module index (in modules).
+        std::map<std::string, int> module_map;  // Map from module name to module index (in modules).
         int module_count = 0;  // Number of modules.
 };
 

@@ -15,30 +15,33 @@ namespace SOFIE {
 
 class RLayer_Input: public RModule {
     public:
-        RLayer_Input() {
         /**
          * Construct the input layer.
          * 
          * Simply stores the input so that child modules can access it.
         */
+        RLayer_Input() {
             inputs = {};  // No previous inputs to this layer.
         }
 
+        /** Destruct the module. */
+        ~RLayer_Input() {};
+
+        /**
+         * Assign input.
+         * 
+         * @param input The input.
+        */
         void setParams(std::vector<float> input) {
-            /**
-             * Assign input.
-             * 
-             * @param input The input.
-            */
             in = input;
         }
 
+        /**
+         * Simply forward the input.
+         * 
+         * @returns The input.
+        */
         std::vector<float> forward() {
-            /**
-             * Simply forward the input.
-             * 
-             * @returns The input.
-            */
             return in;
         }
 
