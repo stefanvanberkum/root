@@ -7,14 +7,12 @@
 #ifndef TMVA_SOFIE_RMODEL_TORCHGNN_H_
 #define TMVA_SOFIE_RMODEL_TORCHGNN_H_
 
-#include "TMVA/TorchGNN/RModule.hxx"
-#include "TMVA/TorchGNN/layers/RLayer_Input.hxx"
-#include <tuple>
-#include <iostream>
-#include <filesystem>
-#include <fstream>
+#include "TMVA/TorchGNN/modules/RModule.hxx"
+#include "TMVA/TorchGNN/modules/RModule_Input.hxx"
 
-// TODO: User-convenience script in Python to convert tensors to float vector?
+// TODO: User-convenience script in Python to load parameters from state_dict?.
+// - Load parameters for all modules.
+// - Use getInputs() and get corresponding variable from state_dict.
 
 namespace TMVA {
 namespace Experimental {
@@ -35,7 +33,7 @@ class RModel_TorchGNN {
 
             // Generate input layers.
             for (std::string name: input_names) {
-                addModule(std::make_shared<RLayer_Input>(), name);
+                addModule(std::make_shared<RModule_Input>(), name);
             }
         }
 
@@ -50,34 +48,10 @@ class RModel_TorchGNN {
          * Add a module to the module list.
          * 
          * @param module Module to add.
-         * @param name Module name. Defaults to the module type with a count
-         * value (e.g., GCNConv_1).
+         * @param name Module name. Defaults to the module operation with a count
+         * value (e.g., ReLU_1).
         */
-        void addModule(std::shared_ptr<RModule> module, std::string name="") {
-            std::string new_name = (name == "") ? typeid(module).name() : name;
-            if (auto search = module_counts.find(new_name); search != module_counts.end()) {
-                // Module exists, so add discriminator and increment count.
-                new_name += "_" + std::to_string(module_counts[new_name]);
-                module_counts[new_name]++;
-
-                if (name != "") {
-                    // Issue warning.
-                    std::cout << "WARNING: Module with name \"" << name << "\" renamed to \"" << new_name << "\"." << std::endl;
-                }
-            } else {
-                // First module of its kind.
-                module_counts[new_name] = 1;
-            }
-            module -> setName(new_name);
-
-            // Initialize the module.
-            module -> initialize(modules, module_map);
-
-            // Add module to the module list.
-            modules.push_back(module);
-            module_map[module -> getName()] = module_count;
-            module_count++;
-        }
+        void addModule(std::shared_ptr<RModule> module, std::string name="");
         
         /**
          * Run the forward function.
@@ -93,7 +67,7 @@ class RModel_TorchGNN {
             int k = 0;
             std::apply(
                 [&](auto&... in) {
-                    ((std::dynamic_pointer_cast<RLayer_Input>(modules[k++]) -> setParams(in)), ...);
+                    ((std::dynamic_pointer_cast<RModule_Input>(modules[k++]) -> setParams(in)), ...);
                 }, input);
 
             // Loop through and execute modules.
@@ -106,6 +80,15 @@ class RModel_TorchGNN {
         }
 
         /**
+         * Load saved parameters for all modules.
+        */
+        void loadParameters() {
+            for (std::shared_ptr<RModule> module: modules) {
+                module -> loadParameters();
+            }
+        }
+
+        /**
          * Save the model as standalone inference code.
          * 
          * @param path Path to save location.
@@ -113,33 +96,50 @@ class RModel_TorchGNN {
          * @param overwrite True if any existing directory should be
          * overwritten. Defaults to false.
         */
-        void save(std::string path, std::string name, bool overwrite=false) {
-            std::filesystem::copy_options copyOptions;
-            if (overwrite) {
-                copyOptions = std::filesystem::copy_options::overwrite_existing | std::filesystem::copy_options::recursive;
-            } else {
-                copyOptions = std::filesystem::copy_options::recursive;
-            }
-
-            // Copy methods.
-            std::string dir = path + "/" + name;
-            std::filesystem::copy("TMVA/TorchGNN", dir, copyOptions);
-
-            // Iterate over the files to fix the namespaces.
-            std::filesystem::recursive_directory_iterator file_iter = std::filesystem::recursive_directory_iterator(dir);
-            for (const std::filesystem::directory_entry& entry : file_iter) {
-                // Load file.
-                std::ifstream fin;
-                fin.open(entry.path());
-
-                // Create a temporary file.
-                std::ofstream temp;
-                std::filesystem::path temp_path = entry.path();
-                temp_path.replace_filename("temp");
-                temp.open(temp_path);
-            } 
-        }
+        void save(std::string path, std::string name, bool overwrite=false);
     private:
+        /**
+         * Get a timestamp.
+         * 
+         * @returns The timestamp in string format.
+        */
+        static std::string getTimestamp() {
+            time_t rawtime;
+            struct tm * timeinfo;
+            char timestamp [80];
+            time(&rawtime);
+            timeinfo = localtime(&rawtime);
+            strftime(timestamp, 80, "Timestamp: %d-%m-%Y %T.", timeinfo);
+            return timestamp;
+        }
+
+        /**
+         * Write the methods to create a self-contained package.
+         * 
+         * @param dir Directory to save to.
+         * @param name Model name.
+         * @param timestamp Timestamp.
+        */
+        void writeMethods(std::string dir, std::string name, std::string timestamp);
+
+        /**
+         * Write the model to a file.
+         * 
+         * @param dir Directory to save to.
+         * @param name Model name.
+         * @param timestamp Timestamp.
+        */
+        void writeModel(std::string dir, std::string name, std::string timestamp);
+
+        /**
+         * Write the CMakeLists file.
+         * 
+         * @param dir Directory to save to.
+         * @param name Model name.
+         * @param timestamp Timestamp.
+        */
+        void writeCMakeLists(std::string dir, std::string name, std::string timestamp);
+
         std::vector<std::string> inputs;  // Vector of input names.
         std::map<std::string, int> module_counts;  // Map from module name to number of occurrences.
         std::vector<std::shared_ptr<RModule>> modules;  // Vector containing the modules.

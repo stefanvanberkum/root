@@ -6,7 +6,7 @@
 */
 
 #include "TMVA/TorchGNN/RModel_TorchGNN.hxx"
-#include "TMVA/TorchGNN/layers/RLayer_Add.hxx"
+#include "TMVA/TorchGNN/modules/RModule_Add.hxx"
 #include <iostream>
 
 using namespace TMVA::Experimental::SOFIE;
@@ -17,7 +17,7 @@ int main() {
     std::vector<float> c = {0, 0.5, 0, 0.5};
 
     RModel_TorchGNN model = RModel_TorchGNN({"a", "b"});
-    model.addModule(std::make_shared<RLayer_Add>("a", "b"), "out_1");
+    model.addModule(std::make_shared<RModule_Add>("a", "b"), "out_1");
     std::vector<float> out = model.forward(a, b);
 
     for (float x: out) {
@@ -27,8 +27,8 @@ int main() {
     std::cout << std::endl;
 
     model = RModel_TorchGNN({"a", "b", "c"});
-    model.addModule(std::make_shared<RLayer_Add>("a", "b"), "out_1");
-    model.addModule(std::make_shared<RLayer_Add>("out_1", "c"), "out_2");
+    model.addModule(std::make_shared<RModule_Add>("a", "b"), "out_1");
+    model.addModule(std::make_shared<RModule_Add>("out_1", "c"), "out_2");
     out = model.forward(a, b, c);
 
     for (float x: out) {
@@ -38,8 +38,8 @@ int main() {
     std::cout << std::endl;
 
     model = RModel_TorchGNN({"a", "a", "c"});
-    model.addModule(std::make_shared<RLayer_Add>("a", "b"), "out_1");
-    model.addModule(std::make_shared<RLayer_Add>("out_1", "c"), "out_2");
+    model.addModule(std::make_shared<RModule_Add>("a", "b"), "out_1");
+    model.addModule(std::make_shared<RModule_Add>("out_1", "c"), "out_2");
     out = model.forward(a, b, c);
 
     for (float x: out) {

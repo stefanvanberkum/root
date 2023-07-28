@@ -56,14 +56,16 @@ ROOT_STANDARD_LIBRARY_PACKAGE(ROOTTMVASofie
 
    TMVA/TorchGNN/RModel_TorchGNN.hxx
    TMVA/TorchGNN/RModule.hxx
-   TMVA/TorchGNN/layers/RLayer_Input.hxx
-   TMVA/TorchGNN/layers/RLayer_Add.hxx
+   TMVA/TorchGNN/modules/RModule_Input.hxx
+   TMVA/TorchGNN/modules/RModule_Add.hxx
   SOURCES
     src/RModel_Base.cxx
     src/RModel.cxx
     src/RModel_GNN.cxx
     src/RModel_GraphIndependent.cxx
     src/SOFIE_common.cxx
+
+    src/TorchGNN/RModel_TorchGNN.cxx
   DEPENDENCIES
     TMVA
 )

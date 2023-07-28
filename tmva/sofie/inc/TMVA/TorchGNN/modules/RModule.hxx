@@ -43,8 +43,6 @@ class RModule {
             output = out;
         }
 
-        virtual std::vector<float> forward() = 0;  // Forward method to be implemented by each module.
-
         /**
          * Change this module's name.
          * 
@@ -57,7 +55,7 @@ class RModule {
          * 
          * @returns The module name.
         */
-        std::string getName() {return name;}
+        std::string_view getName() {return name;}
 
         /**
          * Get the output of the last call to this module.
@@ -65,6 +63,21 @@ class RModule {
          * @returns The output of the last call.
         */
         std::vector<float> getOutput() {return output;}
+
+        /**
+         * Get the module inputs.
+         * 
+         * @returns The inputs for this module.
+        */
+        std::vector<std::string> getInputs() {return inputs;}
+
+        virtual std::vector<float> forward() = 0;  // Forward method to be implemented by each module.
+
+        virtual std::string_view getOperation() = 0;  // Operation name getter to be implemented by each module.
+        
+        virtual void saveParameters(std::string dir) = 0;  // Parameter saver to be implemented by each module.
+
+        virtual void loadParameters() = 0;  // Parameter loader to be implemented by each module.
     protected:
         std::vector<std::shared_ptr<RModule>> input_modules;  // Vector of input modules.
         std::vector<std::string> inputs;  // Input names.
