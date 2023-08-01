@@ -1,8 +1,8 @@
 /**
- * Tests basic machinery of the TorchGNN functionality.
+ * Tests TorchGNN addition module (RModule_Add).
  * 
  * To run in ROOT terminal:
- * .L /home/stefan/root/tmva/sofie/test/TorchGNN/BasicTest.cxx
+ * .L /home/stefan/root/tmva/sofie/test/TorchGNN/AddTest.cxx
 */
 
 #include "TMVA/TorchGNN/RModel_TorchGNN.hxx"
@@ -16,7 +16,7 @@ int main() {
     std::vector<float> b = {1, 2, 4, 8};
     std::vector<float> c = {0, 0.5, 0, 0.5};
 
-    RModel_TorchGNN model = RModel_TorchGNN({"a", "b"});
+    RModel_TorchGNN model = RModel_TorchGNN({"a", "b"}, {{-1}, {-1}});
     model.addModule(std::make_shared<RModule_Add>("a", "b"), "out_1");
     std::vector<float> out = model.forward(a, b);
 
@@ -26,7 +26,7 @@ int main() {
 
     std::cout << std::endl;
 
-    model = RModel_TorchGNN({"a", "b", "c"});
+    model = RModel_TorchGNN({"a", "b", "c"}, {{-1}, {-1}, {-1}});
     model.addModule(std::make_shared<RModule_Add>("a", "b"), "out_1");
     model.addModule(std::make_shared<RModule_Add>("out_1", "c"), "out_2");
     out = model.forward(a, b, c);
@@ -37,8 +37,8 @@ int main() {
 
     std::cout << std::endl;
 
-    model = RModel_TorchGNN({"a", "a", "c"});
-    model.addModule(std::make_shared<RModule_Add>("a", "b"), "out_1");
+    model = RModel_TorchGNN({"a", "a", "c"}, {{-1}, {-1}, {-1}});
+    model.addModule(std::make_shared<RModule_Add>("a", "a_1"), "out_1");
     model.addModule(std::make_shared<RModule_Add>("out_1", "c"), "out_2");
     out = model.forward(a, b, c);
 

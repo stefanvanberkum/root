@@ -9,6 +9,7 @@
 
 #include "TMVA/TorchGNN/modules/RModule.hxx"
 #include "TMVA/TorchGNN/modules/RModule_Input.hxx"
+#include <stdexcept>
 
 // TODO: User-convenience script in Python to load parameters from state_dict?.
 // - Load parameters for all modules.
@@ -27,22 +28,22 @@ class RModel_TorchGNN {
          * Model constructor with manual input names.
          * 
          * @param input_names Vector of input names.
+         * @param input_shapes Vector of input shapes. Each element may contain
+         * at most one wildcard (-1).
         */
-        RModel_TorchGNN(std::vector<std::string> input_names) {
+        RModel_TorchGNN(std::vector<std::string> input_names, std::vector<std::vector<int>> input_shapes) {
             inputs = input_names;
+            shapes = input_shapes;
 
             // Generate input layers.
-            for (std::string name: input_names) {
-                addModule(std::make_shared<RModule_Input>(), name);
+            for (std::size_t i = 0; i < input_names.size(); i++) {
+                 // Check shape.
+                if (std::count(input_shapes[i].begin(), input_shapes[i].end(), -1) > 1) {
+                    throw std::invalid_argument("Invalid input shape for input " + input_names[i] + ". Shape may have at most one wildcard.");
+                }
+                addModule(std::make_shared<RModule_Input>(input_shapes[i]), input_names[i]);
             }
         }
-
-        //RModel_TorchGNN(std::vector<std::string> input_names, std::vector<std::string> module_list) {
-            // TODO: Initialize modules directly.
-        //}
-        //RModel_TorchGNN(std::vector<std::string> input_names, std::vector<std::string> module_list, std::vector<std::string> param_files) {
-            // TODO: Initialize modules directly and add weights.
-        //}
 
         /**
          * Add a module to the module list.
@@ -141,6 +142,7 @@ class RModel_TorchGNN {
         void writeCMakeLists(std::string dir, std::string name, std::string timestamp);
 
         std::vector<std::string> inputs;  // Vector of input names.
+        std::vector<std::vector<int>> shapes;  // Vector of input shapes.
         std::map<std::string, int> module_counts;  // Map from module name to number of occurrences.
         std::vector<std::shared_ptr<RModule>> modules;  // Vector containing the modules.
         std::map<std::string, int> module_map;  // Map from module name to module index (in modules).

@@ -36,11 +36,12 @@ class RModule {
         /**
          * Execute the module.
          * 
-         * This triggers the module's forward method and stores the output.
+         * This triggers the module's forward method and stores the output and
+         * its shape.
         */
         void execute() {
-            std::vector<float> out = forward();
-            output = out;
+            out_shape = inferShape();  // Infer shape on the fly. TODO: Test impact on performance and possibly execute once for static models.
+            output = forward();
         }
 
         /**
@@ -58,6 +59,13 @@ class RModule {
         std::string_view getName() {return name;}
 
         /**
+         * Get the module inputs.
+         * 
+         * @returns The inputs for this module.
+        */
+        std::vector<std::string> getInputs() {return inputs;}
+
+        /**
          * Get the output of the last call to this module.
          * 
          * @returns The output of the last call.
@@ -65,13 +73,15 @@ class RModule {
         std::vector<float> getOutput() {return output;}
 
         /**
-         * Get the module inputs.
+         * Get the output shape of the last call to this module.
          * 
-         * @returns The inputs for this module.
+         * @returns The output shape of the last call.
         */
-        std::vector<std::string> getInputs() {return inputs;}
+        std::vector<int> getShape() {return out_shape;}
 
         virtual std::vector<float> forward() = 0;  // Forward method to be implemented by each module.
+
+        virtual std::vector<int> inferShape() = 0;  // Output shape inference to be implemented by each module.
 
         virtual std::string_view getOperation() = 0;  // Operation name getter to be implemented by each module.
         
@@ -80,10 +90,11 @@ class RModule {
         virtual void loadParameters() = 0;  // Parameter loader to be implemented by each module.
     protected:
         std::vector<std::shared_ptr<RModule>> input_modules;  // Vector of input modules.
-        std::vector<std::string> inputs;  // Input names.
+        std::vector<std::string> inputs;  // Input names. 
     private:
         std::string name;  // Module name.  
         std::vector<float> output;  // Output of last call.
+        std::vector<int> out_shape;  // Output shape of last call.
 };
 
 }  // TMVA.

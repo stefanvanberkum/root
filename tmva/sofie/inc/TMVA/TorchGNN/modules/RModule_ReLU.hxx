@@ -1,9 +1,9 @@
 /**
- * Addition module.
+ * ReLU module.
 */
 
-#ifndef TMVA_SOFIE_RMODULE_ADD_H_
-#define TMVA_SOFIE_RMODULE_ADD_H_
+#ifndef TMVA_SOFIE_RMODULE_RELU_H_
+#define TMVA_SOFIE_RMODULE_RELU_H_
 
 #include "TMVA/TorchGNN/modules/RModule.hxx"
 #include <gsl/gsl_cblas.h>
@@ -12,35 +12,39 @@ namespace TMVA {
 namespace Experimental {
 namespace SOFIE {
 
-class RModule_Add: public RModule {
+class RModule_ReLU: public RModule {
     public:
         /**
-         * Construct the addition module.
+         * Construct the ReLU module.
          * 
-         * @param a The first argument.
-         * @param b The second argument.
+         * The ReLU operation will be applied element-wise.
+         * 
+         * @param x The input.
         */
-        RModule_Add(std::string a, std::string b) {
-            inputs = {a, b};
+        RModule_ReLU(std::string x) {
+            inputs = {x};
         }
 
         /** Destruct the module. */
-        ~RModule_Add() {};
+        ~RModule_ReLU() {};
 
         /**
-         * Add the arguments a and b.
+         * Apply the ReLU operation min(0, x).
          * 
-         * @returns Result (a + b).
+         * @returns Result min(0, x).
         */
         std::vector<float> forward() {
-            std::vector<float> a = input_modules[0] -> getOutput();
-            std::vector<float> b = input_modules[1] -> getOutput();
+            std::vector<float> x = input_modules[0] -> getOutput();
 
-            int n = a.size();
+            int n = x.size();
 
-            cblas_saxpy(n, 1, a.data(), 1, b.data(), 1);
+            for (int i = 0; i < n; i++) {
+                if (x[i] < 0) {
+                    x[i] = 0;
+                }
+            }
 
-            return b;
+            return x;
         }
 
         /**
@@ -51,7 +55,8 @@ class RModule_Add: public RModule {
          * @returns The output shape.
         */
         std::vector<int> inferShape() {
-            return input_modules[0] -> getShape();
+            std::vector<int> shape = input_modules[0] -> getShape();
+            return shape;
         }
 
         /**
@@ -60,7 +65,7 @@ class RModule_Add: public RModule {
          * @returns The name of the operation.
         */
         std::string_view getOperation() {
-            return "Add";
+            return "ReLU";
         }
 
         /** 
@@ -82,4 +87,4 @@ class RModule_Add: public RModule {
 }  // Experimental.
 }  // SOFIE.
 
-#endif  // TMVA_SOFIE_RMODULE_ADD_H_
+#endif  // TMVA_SOFIE_RMODULE_RELU_H_

@@ -8,6 +8,7 @@
 #define TMVA_SOFIE_RMODULE_INPUT_H_
 
 #include "TMVA/TorchGNN/modules/RModule.hxx"
+#include <algorithm>
 
 namespace TMVA {
 namespace Experimental {
@@ -18,10 +19,14 @@ class RModule_Input: public RModule {
         /**
          * Construct the input module.
          * 
-         * Simply stores the input so that child modules can access it.
+         * The module stores the input and its shape so that child modules can access it.
+         * 
+         * @param input_shape The shape of the input. 
         */
-        RModule_Input() {
+        RModule_Input(std::vector<int> input_shape) {
             inputs = {};  // No previous inputs to this module.
+            wildcard = std::find(input_shape.begin(), input_shape.end(), -1) - input_shape.begin();
+            in_shape = input_shape;
         }
 
         /** Destruct the module. */
@@ -43,6 +48,26 @@ class RModule_Input: public RModule {
         */
         std::vector<float> forward() {
             return in;
+        }
+
+        /**
+         * Infer the output shape.
+         * 
+         * For this module, the output shape is the same as the input shape
+         * with an inferred value for the wildcard dimension.
+         * 
+         * @returns The output shape.
+        */
+        std::vector<int> inferShape() {
+            int cprod = 1;
+            for (std::size_t i = 0; i < in_shape.size(); i++) {
+                if (i != wildcard) {
+                    cprod *= in_shape[i];
+                }
+            }
+            std::vector<int> shape = in_shape;
+            shape[wildcard] = in.size() / cprod;
+            return shape;
         }
 
         /**
@@ -68,7 +93,9 @@ class RModule_Input: public RModule {
         */
         void loadParameters() {}
     private:
-        std::vector<float> in;
+        std::size_t wildcard;  // Index of the wildcard dimension.
+        std::vector<float> in;  // Input.
+        std::vector<int> in_shape;  // Input shape.
 };
 
 }  // TMVA.

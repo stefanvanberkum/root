@@ -196,13 +196,33 @@ void RModel_TorchGNN::writeModel(std::string dir, std::string name, std::string 
     // Write model construction.
     model << "\tRModel_TorchGNN model = RModel_TorchGNN({";
     bool first = true;
-    for (std::string in: inputs) {
+    for (std::string in: inputs) {  // Input names.
         if (!first) {
             model << ", ";
         } else {
             first = false;
         }
         model << in;
+    }
+    model << "}, {";
+    first = true;
+    for (std::vector<int> in_shape: shapes) {  // Input shapes.
+        if (!first) {
+            model << ", ";
+        } else {
+            first = false;
+        }
+        model << "{";
+        bool first_dim = true;
+        for (int dim: in_shape) {
+            if (!first_dim) {
+                model << ", ";
+            } else {
+                first_dim = false;
+            }
+            model << dim;
+        }
+        model << "}";
     }
     model << "});" << std::endl;
     

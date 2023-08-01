@@ -15,7 +15,7 @@ int main() {
     std::vector<float> b = {1, 2, 4, 8};
     std::vector<float> c = {0, 0.5, 0, 0.5};
 
-    RModel_TorchGNN model = RModel_TorchGNN({"a", "b"});
+    RModel_TorchGNN model = RModel_TorchGNN({"a", "b"}, {{-1}, {-1}});
     model.addModule(std::make_shared<RModule_Add>("a", "b"), "out_1");
     model.addModule(std::make_shared<RModule_Add>("out_1", "c"), "out_2");
     model.save("/home/stefan/root-model", "model", true);
