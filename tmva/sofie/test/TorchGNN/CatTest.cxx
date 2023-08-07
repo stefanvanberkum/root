@@ -1,8 +1,8 @@
 /**
- * Tests TorchGNN addition module (RModule_Add).
+ * Tests the TorchGNN concatenation module (RModule_Cat).
  * 
  * To run in ROOT terminal:
- * .L /home/stefan/root/tmva/sofie/test/TorchGNN/AddTest.cxx
+ * .L /home/stefan/root/tmva/sofie/test/TorchGNN/CatTest.cxx
 */
 
 #include "TMVA/TorchGNN/RModel_TorchGNN.hxx"
@@ -27,7 +27,7 @@ int main() {
     };
 
     RModel_TorchGNN model = RModel_TorchGNN({"a", "b"}, {{-1, 3, 2}, {-1, 3, 2}});
-    model.addModule(std::make_shared<RModule_Cat>("a", "b", 0), "out_1");
+    model.addModule(RModule_Cat("a", "b", 0), "out_1");
     std::vector<float> out = model.forward(a, b);
 
     for (float x: out) {
@@ -42,7 +42,7 @@ int main() {
     };
 
     model = RModel_TorchGNN({"a", "b"}, {{-1, 3, 2}, {-1, 1, 2}});
-    model.addModule(std::make_shared<RModule_Cat>("a", "b", 1), "out_1");
+    model.addModule(RModule_Cat("a", "b", 1), "out_1");
     out = model.forward(a, b);
 
     for (float x: out) {
@@ -61,7 +61,7 @@ int main() {
     };
 
     model = RModel_TorchGNN({"a", "b"}, {{-1, 3, 2}, {-1, 3, 1}});
-    model.addModule(std::make_shared<RModule_Cat>("a", "b", 2), "out_1");
+    model.addModule(RModule_Cat("a", "b", 2), "out_1");
     out = model.forward(a, b);
 
     for (float x: out) {

@@ -66,6 +66,8 @@ if(tmva)
         ROOT/_pythonization/_tmva/_rtensor.py
         ROOT/_pythonization/_tmva/_tree_inference.py
         ROOT/_pythonization/_tmva/_utils.py)
+    list(APPEND PYROOT_EXTRA_PY3_SOURCE
+        ROOT/_pythonization/_tmva/_torchgnn.py)
 endif()
 
 list(APPEND PYROOT_EXTRA_HEADERS

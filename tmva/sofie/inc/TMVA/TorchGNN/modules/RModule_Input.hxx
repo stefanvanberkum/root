@@ -24,9 +24,11 @@ class RModule_Input: public RModule {
          * @param input_shape The shape of the input. 
         */
         RModule_Input(std::vector<int> input_shape) {
-            inputs = {};  // No previous inputs to this module.
-            wildcard = std::find(input_shape.begin(), input_shape.end(), -1) - input_shape.begin();
             in_shape = input_shape;
+            wildcard = std::find(input_shape.begin(), input_shape.end(), -1) - input_shape.begin();
+            
+            inputs = {};  // No previous inputs to this module.
+            args = {};
         }
 
         /** Destruct the module. */
@@ -82,16 +84,27 @@ class RModule_Input: public RModule {
         /** 
          * Save parameters.
          * 
-         * Does nothing for this operation.
+         * Does nothing for this module.
+         * 
+         * @param dir Save directory.
          */
         void saveParameters([[maybe_unused]] std::string dir) {}
 
         /**
-         * Load parameters.
+         * Load saved parameters.
          * 
-         * Does nothing for this operation.
+         * Does nothing for this module.
         */
         void loadParameters() {}
+
+        /**
+         * Load parameters from PyTorch state dictionary.
+         * 
+         * Does nothing for this module.
+         * 
+         * @param state_dict The state dictionary.
+        */
+        void loadParameters([[maybe_unused]] std::map<std::string, std::vector<float>> state_dict) {}
     private:
         std::size_t wildcard;  // Index of the wildcard dimension.
         std::vector<float> in;  // Input.

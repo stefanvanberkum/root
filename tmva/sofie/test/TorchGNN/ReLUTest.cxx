@@ -1,5 +1,5 @@
 /**
- * Tests TorchGNN ReLU module (RModule_ReLU).
+ * Tests the TorchGNN ReLU module (RModule_ReLU).
  * 
  * To run in ROOT terminal:
  * .L /home/stefan/root/tmva/sofie/test/TorchGNN/ReLUTest.cxx
@@ -15,7 +15,7 @@ int main() {
     std::vector<float> a = {-2, -1, 0, 1, 2};
 
     RModel_TorchGNN model = RModel_TorchGNN({"a"}, {{-1}});
-    model.addModule(std::make_shared<RModule_ReLU>("a"), "out_1");
+    model.addModule(RModule_ReLU("a"), "out_1");
     std::vector<float> out = model.forward(a);
 
     for (float x: out) {

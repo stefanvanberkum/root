@@ -57,7 +57,10 @@ ROOT_STANDARD_LIBRARY_PACKAGE(ROOTTMVASofie
    TMVA/TorchGNN/modules/RModule_Add.hxx
    TMVA/TorchGNN/modules/RModule_Cat.hxx
    TMVA/TorchGNN/modules/RModule_Input.hxx
+   TMVA/TorchGNN/modules/RModule_Linear.hxx
    TMVA/TorchGNN/modules/RModule_ReLU.hxx
+   TMVA/TorchGNN/modules/RModule_Reshape.hxx
+   TMVA/TorchGNN/modules/RModule_Softmax.hxx
    TMVA/TorchGNN/modules/RModule.hxx
 
    TMVA/TorchGNN/RModel_TorchGNN.hxx

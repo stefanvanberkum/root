@@ -24,6 +24,8 @@ from ._rbdt import Compute, pythonize_rbdt
 
 from ._gnn import RModel_GNN, RModel_GraphIndependent
 
+from ._torchgnn import RModel_TorchGNN
+
 hasRDF = gSystem.GetFromPipe("root-config --has-dataframe") == "yes"
 if hasRDF:
     from ._rtensor import get_array_interface, add_array_interface_property, RTensorGetitem, pythonize_rtensor

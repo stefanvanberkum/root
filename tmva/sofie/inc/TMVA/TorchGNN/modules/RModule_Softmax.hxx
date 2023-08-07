@@ -1,47 +1,55 @@
 /**
- * Addition module.
+ * Softmax module.
 */
 
-#ifndef TMVA_SOFIE_RMODULE_ADD_H_
-#define TMVA_SOFIE_RMODULE_ADD_H_
+#ifndef TMVA_SOFIE_RMODULE_SOFTMAX_H_
+#define TMVA_SOFIE_RMODULE_SOFTMAX_H_
 
 #include "TMVA/TorchGNN/modules/RModule.hxx"
-#include <gsl/gsl_cblas.h>
+#include <cmath>
 
 namespace TMVA {
 namespace Experimental {
 namespace SOFIE {
 
-class RModule_Add: public RModule {
+class RModule_Softmax: public RModule {
     public:
         /**
-         * Construct the addition module.
+         * Construct the softmax module.
          * 
-         * @param a The first argument.
-         * @param b The second argument.
+         * @param x The input.
         */
-        RModule_Add(std::string a, std::string b) {
-            inputs = {a, b};
+        RModule_Softmax(std::string x) {
+            inputs = {x};
             args = {};
         }
 
         /** Destruct the module. */
-        ~RModule_Add() {};
+        ~RModule_Softmax() {};
 
         /**
-         * Add the arguments a and b.
+         * Apply the softmax operation exp(x_i) / sum(exp(x_j)).
          * 
-         * @returns Result (a + b).
+         * The sum is taken over the last dimension.
+         * 
+         * @returns Result exp(x_i) / sum(exp(x_j)).
         */
         std::vector<float> forward() {
-            std::vector<float> a = input_modules[0] -> getOutput();
-            std::vector<float> b = input_modules[1] -> getOutput();
+            std::vector<float> x = input_modules[0] -> getOutput();
+            int last_dim = input_modules[0] -> getShape().back();
 
-            int n = a.size();
-
-            cblas_saxpy(n, 1, a.data(), 1, b.data(), 1);
-
-            return b;
+            for (std::size_t i = 0; i < x.size(); i += last_dim) {
+                float exps[last_dim];
+                float sum = 0;
+                for (std::size_t j = i; j < i + last_dim; j++) {
+                    exps[j - i] = exp(x[j]);
+                    sum += exps[j - i];
+                }
+                for (std::size_t j = i; j < i + last_dim; j++) {
+                    x[j] = exps[j - i] / sum;
+                }
+            }
+            return x;
         }
 
         /**
@@ -52,7 +60,8 @@ class RModule_Add: public RModule {
          * @returns The output shape.
         */
         std::vector<int> inferShape() {
-            return input_modules[0] -> getShape();
+            std::vector<int> shape = input_modules[0] -> getShape();
+            return shape;
         }
 
         /**
@@ -61,7 +70,7 @@ class RModule_Add: public RModule {
          * @returns The name of the operation.
         */
         std::string_view getOperation() {
-            return "Add";
+            return "Softmax";
         }
 
         /** 
@@ -94,4 +103,4 @@ class RModule_Add: public RModule {
 }  // Experimental.
 }  // SOFIE.
 
-#endif  // TMVA_SOFIE_RMODULE_ADD_H_
+#endif  // TMVA_SOFIE_RMODULE_SOFTMAX_H_

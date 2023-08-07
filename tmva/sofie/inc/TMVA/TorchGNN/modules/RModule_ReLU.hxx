@@ -6,7 +6,6 @@
 #define TMVA_SOFIE_RMODULE_RELU_H_
 
 #include "TMVA/TorchGNN/modules/RModule.hxx"
-#include <gsl/gsl_cblas.h>
 
 namespace TMVA {
 namespace Experimental {
@@ -23,6 +22,7 @@ class RModule_ReLU: public RModule {
         */
         RModule_ReLU(std::string x) {
             inputs = {x};
+            args = {};
         }
 
         /** Destruct the module. */
@@ -36,9 +36,7 @@ class RModule_ReLU: public RModule {
         std::vector<float> forward() {
             std::vector<float> x = input_modules[0] -> getOutput();
 
-            int n = x.size();
-
-            for (int i = 0; i < n; i++) {
+            for (std::size_t i = 0; i < x.size(); i++) {
                 if (x[i] < 0) {
                     x[i] = 0;
                 }
@@ -71,16 +69,27 @@ class RModule_ReLU: public RModule {
         /** 
          * Save parameters.
          * 
-         * Does nothing for this operation.
+         * Does nothing for this module.
+         * 
+         * @param dir Save directory.
          */
         void saveParameters([[maybe_unused]] std::string dir) {}
 
         /**
-         * Load parameters.
+         * Load saved parameters.
          * 
-         * Does nothing for this operation.
+         * Does nothing for this module.
         */
         void loadParameters() {}
+
+        /**
+         * Load parameters from PyTorch state dictionary.
+         * 
+         * Does nothing for this module.
+         * 
+         * @param state_dict The state dictionary.
+        */
+        void loadParameters([[maybe_unused]] std::map<std::string, std::vector<float>> state_dict) {}
 };
 
 }  // TMVA.

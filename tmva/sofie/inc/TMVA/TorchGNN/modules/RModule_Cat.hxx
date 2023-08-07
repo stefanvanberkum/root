@@ -31,14 +31,16 @@ class RModule_Cat: public RModule {
         */
         RModule_Cat(std::string a, std::string b, int dim) {
             cdim = dim;
+            
             inputs = {a, b};
+            args = {std::to_string(dim)};
         }
 
         /** Destruct the module. */
         ~RModule_Cat() {};
 
         /**
-         * Apply the concatenation operation.
+         * Concatenate the inputs.
          * 
          * @returns The concatenated array.
         */
@@ -61,6 +63,24 @@ class RModule_Cat: public RModule {
         std::vector<int> inferShape() {
             shape_a = input_modules[0] -> getShape();
             shape_b = input_modules[1] -> getShape();
+
+            // Check shapes.
+            for (std::size_t i = 0; i < shape_a.size(); i++) {
+                if (i != cdim && shape_a[i] != shape_b[i]) {
+                    std::vector<int> expected_shape = shape_a;
+                    expected_shape[cdim] = -1;
+                    std::string ex_s_str = "[" + std::to_string(expected_shape[0]);
+                    std::string b_s_str = "[" + std::to_string(shape_b[0]);
+                    for (std::size_t j = 1; j < expected_shape.size(); j++) {
+                        ex_s_str += ", " + std::to_string(expected_shape[j]);
+                        b_s_str += ", " + std::to_string(shape_b[j]);
+                    }
+                    ex_s_str += "]";
+                    b_s_str += "]";
+                    throw std::invalid_argument("Incompatible shapes in concatenation layer " + std::string(getName()) + ". Expected shape " + ex_s_str + ", got shape " + b_s_str + ".");
+                }
+            }
+
             std::vector<int> shape = shape_a;
             shape[cdim] += shape_b[cdim];
             dims = shape;
@@ -79,17 +99,27 @@ class RModule_Cat: public RModule {
         /** 
          * Save parameters.
          * 
-         * Does nothing for this operation.
+         * Does nothing for this module.
+         * 
+         * @param dir Save directory.
          */
         void saveParameters([[maybe_unused]] std::string dir) {}
 
         /**
-         * Load parameters.
+         * Load saved parameters.
          * 
-         * Does nothing for this operation.
+         * Does nothing for this module.
         */
         void loadParameters() {}
 
+        /**
+         * Load parameters from PyTorch state dictionary.
+         * 
+         * Does nothing for this module.
+         * 
+         * @param state_dict The state dictionary.
+        */
+        void loadParameters([[maybe_unused]] std::map<std::string, std::vector<float>> state_dict) {}
     private:
         /**
          * Recursively concatenate the inputs along a prespecified dimension.

@@ -3,6 +3,13 @@
  * 
  * Modules define the operations that can be performed in a forward pass. They
  * can be layers, activations, or generic operations.
+ * 
+ * IMPORTANT: Besides the virtual methods, each RModule should assign its inputs
+ * to the class variable "inputs" and other arguments to the class variable
+ * "args" (in string format).
+ * IMPORTANT: Changes to the format (e.g., namespaces) may affect the emit
+ * defined in RModel_TorchGNN.cxx (save). To be safe, new modules should closely
+ * follow the format of the exisiting modules (i.e., copy-paste and edit).
 */
 
 #ifndef TMVA_SOFIE_RMODULE_H_
@@ -66,6 +73,11 @@ class RModule {
         std::vector<std::string> getInputs() {return inputs;}
 
         /**
+         * Get the module arguments.
+        */
+        std::vector<std::string> getArgs() {return args;}
+
+        /**
          * Get the output of the last call to this module.
          * 
          * @returns The output of the last call.
@@ -88,11 +100,14 @@ class RModule {
         virtual void saveParameters(std::string dir) = 0;  // Parameter saver to be implemented by each module.
 
         virtual void loadParameters() = 0;  // Parameter loader to be implemented by each module.
+
+        virtual void loadParameters(std::map<std::string, std::vector<float>>) = 0;  // Parameter loader to be implemented by each module.
     protected:
-        std::vector<std::shared_ptr<RModule>> input_modules;  // Vector of input modules.
-        std::vector<std::string> inputs;  // Input names. 
-    private:
         std::string name;  // Module name.  
+        std::vector<std::shared_ptr<RModule>> input_modules;  // Vector of input modules.
+        std::vector<std::string> inputs;  // Input names.
+        std::vector<std::string> args;  // Other arguments.
+    private:
         std::vector<float> output;  // Output of last call.
         std::vector<int> out_shape;  // Output shape of last call.
 };

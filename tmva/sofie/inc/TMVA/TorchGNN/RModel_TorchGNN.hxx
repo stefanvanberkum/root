@@ -2,6 +2,9 @@
  * Header file for PyTorch Geometric models.
  * 
  * Models are created by the user and parameters can then be loaded into each layer.
+ * 
+ * IMPORTANT: Changes to the format (e.g., namespaces) may affect the emit
+ * defined in RModel_TorchGNN.cxx (save).
 */
 
 #ifndef TMVA_SOFIE_RMODEL_TORCHGNN_H_
@@ -10,10 +13,7 @@
 #include "TMVA/TorchGNN/modules/RModule.hxx"
 #include "TMVA/TorchGNN/modules/RModule_Input.hxx"
 #include <stdexcept>
-
-// TODO: User-convenience script in Python to load parameters from state_dict?.
-// - Load parameters for all modules.
-// - Use getInputs() and get corresponding variable from state_dict.
+#include <iostream>
 
 namespace TMVA {
 namespace Experimental {
@@ -37,11 +37,17 @@ class RModel_TorchGNN {
 
             // Generate input layers.
             for (std::size_t i = 0; i < input_names.size(); i++) {
-                 // Check shape.
+                // Check shape.
+                if (std::any_of(input_shapes[i].begin(), input_shapes[i].end(), [](int j){return j == 0;})) {
+                    throw std::invalid_argument("Invalid input shape for input " + input_names[i] + ". Dimension cannot be zero.");
+                }
+                if (std::any_of(input_shapes[i].begin(), input_shapes[i].end(), [](int j){return j < -1;})) {
+                    throw std::invalid_argument("Invalid input shape for input " + input_names[i] + ". Shape cannot have negative entries (except for the wildcard dimension).");
+                }
                 if (std::count(input_shapes[i].begin(), input_shapes[i].end(), -1) > 1) {
                     throw std::invalid_argument("Invalid input shape for input " + input_names[i] + ". Shape may have at most one wildcard.");
                 }
-                addModule(std::make_shared<RModule_Input>(input_shapes[i]), input_names[i]);
+                addModule(RModule_Input(input_shapes[i]), input_names[i]);
             }
         }
 
@@ -49,10 +55,35 @@ class RModel_TorchGNN {
          * Add a module to the module list.
          * 
          * @param module Module to add.
-         * @param name Module name. Defaults to the module operation with a count
-         * value (e.g., ReLU_1).
+         * @param name Module name. Defaults to the module type with a count
+         * value (e.g., GCNConv_1).
         */
-        void addModule(std::shared_ptr<RModule> module, std::string name="");
+        template<typename T>
+        void addModule(T module, std::string name="") {
+            std::string new_name = (name == "") ? std::string(module.getOperation()) : name;
+            if (module_counts[new_name] > 0) {
+                // Module exists, so add discriminator and increment count.
+                new_name += "_" + std::to_string(module_counts[new_name]);
+                module_counts[new_name]++;
+
+                if (name != "") {
+                    // Issue warning.
+                    std::cout << "WARNING: Module with duplicate name \"" << name << "\" renamed to \"" << new_name << "\"." << std::endl;
+                }
+            } else {
+                // First module of its kind.
+                module_counts[new_name] = 1;
+            }
+            module.setName(new_name);
+
+            // Initialize the module.
+            module.initialize(modules, module_map);
+
+            // Add module to the module list.
+            modules.push_back(std::make_shared<T>(module));
+            module_map[std::string(module.getName())] = module_count;
+            module_count++;
+        }
         
         /**
          * Run the forward function.
@@ -62,7 +93,7 @@ class RModel_TorchGNN {
         */
         template<class... Types>
         std::vector<float> forward(Types... args) {
-            auto input = make_tuple(args...);
+            auto input = std::make_tuple(args...);
 
             // Instantiate input layers.
             int k = 0;
@@ -78,6 +109,17 @@ class RModel_TorchGNN {
 
             // Return output of the last layer.
             return modules.back() -> getOutput();
+        }
+
+        /**
+         * Load parameters from PyTorch state dictionary for all modules.
+         * 
+         * @param state_dict The state dictionary.
+        */
+        void loadParameters(std::map<std::string, std::vector<float>> state_dict) {
+            for (std::shared_ptr<RModule> module: modules) {
+                module -> loadParameters(state_dict);
+            }
         }
 
         /**

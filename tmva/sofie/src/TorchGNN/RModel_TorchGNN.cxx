@@ -2,6 +2,9 @@
  * Source file for PyTorch Geometric models.
  * 
  * Models are created by the user and parameters can then be loaded into each layer.
+ * 
+ * IMPORTANT: Changes to the format (e.g., namespaces) may affect the emit
+ * defined in RModel_TorchGNN.cxx (save).
 */
 
 #include "TMVA/TorchGNN/RModel_TorchGNN.hxx"
@@ -9,7 +12,6 @@
 #include <string>
 #include <map>
 #include <tuple>
-#include <iostream>
 #include <filesystem>
 #include <fstream>
 #include <ctime>
@@ -18,39 +20,6 @@
 namespace TMVA {
 namespace Experimental {
 namespace SOFIE {
-
-/**
- * Add a module to the module list.
- * 
- * @param module Module to add.
- * @param name Module name. Defaults to the module type with a count
- * value (e.g., GCNConv_1).
-*/
-void RModel_TorchGNN::addModule(std::shared_ptr<RModule> module, std::string name /*=""*/) {
-    std::string new_name = (name == "") ? std::string(module -> getOperation()) : name;
-    if (module_counts[new_name] > 0) {
-        // Module exists, so add discriminator and increment count.
-        new_name += "_" + std::to_string(module_counts[new_name]);
-        module_counts[new_name]++;
-
-        if (name != "") {
-            // Issue warning.
-            std::cout << "WARNING: Module with duplicate name \"" << name << "\" renamed to \"" << new_name << "\"." << std::endl;
-        }
-    } else {
-        // First module of its kind.
-        module_counts[new_name] = 1;
-    }
-    module -> setName(new_name);
-
-    // Initialize the module.
-    module -> initialize(modules, module_map);
-
-    // Add module to the module list.
-    modules.push_back(module);
-    module_map[std::string(module -> getName())] = module_count;
-    module_count++;
-}
 
 /**
  * Save the model as standalone inference code.
@@ -66,10 +35,10 @@ void RModel_TorchGNN::save(std::string path, std::string name, bool overwrite /*
     // Get timestamp.
     std::string timestamp = getTimestamp();
     
-    if (std::filesystem::exists(path)) {
+    if (std::filesystem::exists(dir)) {
         if (overwrite) {
             // Clean directory.
-            std::filesystem::remove_all(path);
+            std::filesystem::remove_all(dir);
         } else {
             // Display warning.
             std::cout << "WARNING: Could not save model. Directory " << dir << " exists and overwrite is set to false.";
@@ -85,6 +54,16 @@ void RModel_TorchGNN::save(std::string path, std::string name, bool overwrite /*
 
     // Write CMakeLists.
     writeCMakeLists(dir, name, timestamp);
+
+    // Create parameter directory.
+    std::filesystem::path param_dir = std::filesystem::path(dir);
+    param_dir /= "params";
+    std::filesystem::create_directory(param_dir);
+    
+    // Save parameters.
+    for (std::shared_ptr<RModule> m: modules) {
+        m -> saveParameters(param_dir);
+    }
 }
 
 /**
@@ -110,7 +89,7 @@ void RModel_TorchGNN::writeMethods(std::string dir, std::string name, std::strin
     std::filesystem::create_directory(dir + "/src");
     std::filesystem::copy(src_dir, dir + "/src", std::filesystem::copy_options::recursive);
 
-    // Iterate over the files to fix the namespaces.
+    // Iterate over the files to fix the namespaces and other issues.
     std::filesystem::recursive_directory_iterator file_iter = std::filesystem::recursive_directory_iterator(dir);
     std::string line;
     for (const std::filesystem::directory_entry& entry: file_iter) {
@@ -130,15 +109,31 @@ void RModel_TorchGNN::writeMethods(std::string dir, std::string name, std::strin
             temp << "// " << timestamp << std::endl << std::endl;
 
             while (std::getline(fin, line)) {
-                if ((line.find("namespace ") == std::string::npos) && (line.find("}  //") == std::string::npos)) {
+                if (
+                    (
+                        (line.find("namespace TMVA {") == std::string::npos) && 
+                        (line.find("namespace Experimental {") == std::string::npos) &&
+                        (line.find("namespace SOFIE {") == std::string::npos) &&
+                        (line.find("}  // SOFIE.") == std::string::npos) &&
+                        (line.find("}  // Experimental.") == std::string::npos) &&
+                        (line.find("}  // TMVA.") == std::string::npos)
+                    )
+                        || (line.find("line.find") != std::string::npos)
+                   ) {
                     // Not a namespace line, so fix other issues and write
                     // to file.
                     std::string del_string = " TMVA_SOFIE_";
-                    if (line.find(del_string) != std::string::npos) {
+                    if ((line.find(del_string) != std::string::npos) && (line.find("del_string") == std::string::npos)) {
                         line.replace(line.find(del_string), del_string.size(), " ");
                     }
                     del_string = "\"TMVA/TorchGNN/";
-                    if (line.find(del_string) != std::string::npos) {
+                    if ((line.find(del_string) != std::string::npos)  && (line.find("del_string") == std::string::npos)) {
+                        line.replace(line.find(del_string), del_string.size(), "\"");
+                    }
+                    del_string = "\"modules/";
+                    if ((entry.path().filename().string().find("RModule_") != std::string::npos) && 
+                        (line.find(del_string) != std::string::npos)  && 
+                        (line.find("del_string") == std::string::npos)) {
                         line.replace(line.find(del_string), del_string.size(), "\"");
                     }
                     temp << line << std::endl;
@@ -165,7 +160,7 @@ void RModel_TorchGNN::writeMethods(std::string dir, std::string name, std::strin
 */
 void RModel_TorchGNN::writeModel(std::string dir, std::string name, std::string timestamp) {
     std::ofstream model;
-    model.open(dir + "/" + name + ".hxx");
+    model.open(dir + "/inc/" + name + ".hxx");
     
     // Write header.
     model << "// Automatically generated for " << name << "." << std::endl;
@@ -185,16 +180,17 @@ void RModel_TorchGNN::writeModel(std::string dir, std::string name, std::string 
         m -> saveParameters(module_dir);
     }
     for (std::string_view m: used_modules) {
-        model << "#include \"modules/RModule_" << m << ".hxx" << std::endl;
+        model << "#include \"modules/RModule_" << m << ".hxx\"" << std::endl;
     }
 
     model << std::endl;
 
     // Construct model.
-    model << "RModel_TorchGNN build() {" << std::endl;
+    model << "class " << name << ": public RModel_TorchGNN {" << std::endl;
+    model << "\tpublic:" << std::endl;
 
     // Write model construction.
-    model << "\tRModel_TorchGNN model = RModel_TorchGNN({";
+    model << "\t\t" << name << "(): RModel_TorchGNN({";
     bool first = true;
     for (std::string in: inputs) {  // Input names.
         if (!first) {
@@ -202,7 +198,7 @@ void RModel_TorchGNN::writeModel(std::string dir, std::string name, std::string 
         } else {
             first = false;
         }
-        model << in;
+        model << "\"" << in << "\"";
     }
     model << "}, {";
     first = true;
@@ -224,7 +220,7 @@ void RModel_TorchGNN::writeModel(std::string dir, std::string name, std::string 
         }
         model << "}";
     }
-    model << "});" << std::endl;
+    model << "}) {" << std::endl;
     
     // Write module additions.
     for (std::shared_ptr<RModule> m: modules) {
@@ -236,9 +232,9 @@ void RModel_TorchGNN::writeModel(std::string dir, std::string name, std::string 
         std::string_view module_name = m -> getName();
         std::string_view op = m -> getOperation();
         std::vector<std::string> module_inputs = m -> getInputs();
-        model << "\tmodel.addModule(std::make_shared<" << op << ">(";
+        model << "\t\t\taddModule(RModule_" << op << "(";
         first = true;
-        for (std::string in: module_inputs) {
+        for (std::string in: module_inputs) {  // Input names.
             if (!first) {
                 model << ", ";
             } else {
@@ -246,14 +242,18 @@ void RModel_TorchGNN::writeModel(std::string dir, std::string name, std::string 
             }
             model << "\"" << in << "\"";
         }
+        std::vector<std::string> module_args = m -> getArgs();
+        for (std::string arg: module_args) {  // Other arguments.
+            model << ", " << arg;
+        }
         model << "), \"" << module_name << "\");" << std::endl;
     }
     // Write parameter loading.
-    model << "\tmodel.loadParameters();" << std::endl;
+    model << "\t\t\tloadParameters();" << std::endl;
 
-    // Return model.
-    model << "\treturn model;" << std::endl;
-    model << "}" << std::endl << std::endl;
+    model << "\t}" << std::endl;
+    model << "};" << std::endl;
+    model.close();
 }
 
 /**
@@ -264,7 +264,22 @@ void RModel_TorchGNN::writeModel(std::string dir, std::string name, std::string 
  * @param timestamp Timestamp.
 */
 void RModel_TorchGNN::writeCMakeLists(std::string dir, std::string name, std::string timestamp) {
-    // TODO.
+    std::ofstream f;
+    f.open(dir + "/CMakeLists.txt");
+    
+    // Write header.
+    f << "# Automatically generated for " << name << "." << std::endl;
+    f << "# " << timestamp << std::endl << std::endl;
+
+    f << "add_library(" << std::endl;
+    f << "\t" << name << std::endl;
+    f << "\tinc/" << name << ".hxx" << std::endl;
+    f << "\tinc/RModel_TorchGNN.hxx" << std::endl;
+    f << "\tsrc/RModel_TorchGNN.cxx" << std::endl;
+    f << ")" << std::endl << std::endl;
+
+    f << "target_include_directories(" << name << " PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/inc)" << std::endl;
+    f.close();
 }
 
 }  // SOFIE.
