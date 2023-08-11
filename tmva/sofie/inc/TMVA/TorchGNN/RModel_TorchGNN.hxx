@@ -7,6 +7,19 @@
  * defined in RModel_TorchGNN.cxx (save).
 */
 
+// TODO: Fix names to comply with ROOT styleguide.
+
+/**
+ * Possible optimizations:
+ * 
+ * - Keep track of the number of uses of each module's output. If one -> use a
+ *   pointer and modify the output directly. If larger than one, copy output.
+ *   Possibly use forward(bool copy=false) and check in forward loop whether
+ *   use_counts[i] > 1. If copy is needed, perhaps use cblas_scopy?
+ * - Use sparse matrix operations (Eigen?).
+*/
+
+
 #ifndef TMVA_SOFIE_RMODEL_TORCHGNN_H_
 #define TMVA_SOFIE_RMODEL_TORCHGNN_H_
 

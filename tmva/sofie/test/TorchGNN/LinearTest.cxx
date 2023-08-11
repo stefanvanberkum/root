@@ -2,7 +2,8 @@
  * Tests the TorchGNN linear module (RModule_Linear).
  * 
  * To run in ROOT terminal:
- * .L /home/stefan/root/tmva/sofie/test/TorchGNN/LinearTest.cxx
+ * .L path_to_root/tmva/sofie/test/TorchGNN/LinearTest.cxx
+ * main()
 */
 
 #include "TMVA/TorchGNN/RModel_TorchGNN.hxx"

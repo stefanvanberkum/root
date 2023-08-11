@@ -2,7 +2,8 @@
  * Tests the TorchGNN softmax module (RModule_Softmax).
  * 
  * To run in ROOT terminal:
- * .L /home/stefan/root/tmva/sofie/test/TorchGNN/SoftmaxTest.cxx
+ * .L path_to_root/tmva/sofie/test/TorchGNN/SoftmaxTest.cxx
+ * main()
 */
 
 #include "TMVA/TorchGNN/RModel_TorchGNN.hxx"

@@ -2,7 +2,8 @@
  * Tests the TorchGNN reshape module (RModule_Reshape).
  * 
  * To run in ROOT terminal:
- * .L /home/stefan/root/tmva/sofie/test/TorchGNN/ReshapeTest.cxx
+ * .L path_to_root/tmva/sofie/test/TorchGNN/ReshapeTest.cxx
+ * main()
 */
 
 #include "TMVA/TorchGNN/RModel_TorchGNN.hxx"

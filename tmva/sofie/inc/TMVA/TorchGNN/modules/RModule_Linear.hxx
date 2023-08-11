@@ -53,6 +53,7 @@ class RModule_Linear: public RModule {
         std::vector<float> forward() {
             std::vector<float> in = input_modules[0] -> getOutput();
             std::vector<float> out;
+            out.reserve(n_out);
 
             if (row_dim > 1) {
                 // Perform matrix multiplications (Y = XA^T + 1b^T := XA^T + B).
@@ -94,7 +95,7 @@ class RModule_Linear: public RModule {
                     std::vector<float> y(b);
 
                     // Perform matrix-vector multiplication (y = Ax + b).
-                    cblas_sgemv(CblasRowMajor, CblasNoTrans, m, n, 1, A.data(), m, x.data(), 1, 1, y.data(), 1);
+                    cblas_sgemv(CblasRowMajor, CblasNoTrans, n, m, 1, A.data(), m, x.data(), 1, 1, y.data(), 1);
                     for (float elem: y) {  // cblas sets (b = Ax + b).
                         out.push_back(elem);
                     }
@@ -117,6 +118,11 @@ class RModule_Linear: public RModule {
 
             if (shape.size() > 1) {
                 row_dim = shape[shape.size() - 2];
+            }
+
+            n_out = 1;
+            for (int dim: shape) {
+                n_out *= dim;
             }
             return shape;
         }
@@ -202,7 +208,7 @@ class RModule_Linear: public RModule {
             }
             
             if (include_bias) {
-                if (auto search = state_dict.find(name + ".weight"); search != state_dict.end()) {
+                if (auto search = state_dict.find(name + ".bias"); search != state_dict.end()) {
                     b = state_dict[name + ".bias"];
                 } else {
                     std::cout << "WARNING: Biases for module " << name << " not found." << std::endl;
@@ -214,6 +220,7 @@ class RModule_Linear: public RModule {
         int output_features;  // The size of each output sample.
         bool include_bias;  // True if a bias is included.
         int row_dim = 1;  // Size of the second to last input dimension.
+        int n_out;  // The number of output elements.
         std::vector<float> A;  // Weight matrix A.
         std::vector<float> b;  // Bias vector b.
 };

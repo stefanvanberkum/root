@@ -2,7 +2,8 @@
  * Tests the TorchGNN addition module (RModule_Add).
  * 
  * To run in ROOT terminal:
- * .L /home/stefan/root/tmva/sofie/test/TorchGNN/AddTest.cxx
+ * .L path_to_root/tmva/sofie/test/TorchGNN/AddTest.cxx
+ * main()
 */
 
 #include "TMVA/TorchGNN/RModel_TorchGNN.hxx"

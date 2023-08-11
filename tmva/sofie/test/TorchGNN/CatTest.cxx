@@ -2,7 +2,8 @@
  * Tests the TorchGNN concatenation module (RModule_Cat).
  * 
  * To run in ROOT terminal:
- * .L /home/stefan/root/tmva/sofie/test/TorchGNN/CatTest.cxx
+ * .L path_to_root/tmva/sofie/test/TorchGNN/CatTest.cxx
+ * main()
 */
 
 #include "TMVA/TorchGNN/RModel_TorchGNN.hxx"

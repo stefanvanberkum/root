@@ -107,9 +107,9 @@ class RModule {
         std::vector<std::shared_ptr<RModule>> input_modules;  // Vector of input modules.
         std::vector<std::string> inputs;  // Input names.
         std::vector<std::string> args;  // Other arguments.
+        std::vector<int> out_shape;  // Output shape of last call.
     private:
         std::vector<float> output;  // Output of last call.
-        std::vector<int> out_shape;  // Output shape of last call.
 };
 
 }  // TMVA.

@@ -2,7 +2,8 @@
  * Tests the TorchGNN ReLU module (RModule_ReLU).
  * 
  * To run in ROOT terminal:
- * .L /home/stefan/root/tmva/sofie/test/TorchGNN/ReLUTest.cxx
+ * .L path_to_root/tmva/sofie/test/TorchGNN/ReLUTest.cxx
+ * main()
 */
 
 #include "TMVA/TorchGNN/RModel_TorchGNN.hxx"

@@ -56,6 +56,8 @@ ROOT_STANDARD_LIBRARY_PACKAGE(ROOTTMVASofie
 
    TMVA/TorchGNN/modules/RModule_Add.hxx
    TMVA/TorchGNN/modules/RModule_Cat.hxx
+   TMVA/TorchGNN/modules/RModule_GCNConv.hxx
+   TMVA/TorchGNN/modules/RModule_GlobalMeanPool.hxx
    TMVA/TorchGNN/modules/RModule_Input.hxx
    TMVA/TorchGNN/modules/RModule_Linear.hxx
    TMVA/TorchGNN/modules/RModule_ReLU.hxx

@@ -6,7 +6,6 @@
 #define TMVA_SOFIE_RMODULE_RESHAPE_H_
 
 #include "TMVA/TorchGNN/modules/RModule.hxx"
-#include <gsl/gsl_cblas.h>
 #include <algorithm>
 #include <stdexcept>
 

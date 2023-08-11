@@ -136,6 +136,10 @@ void RModel_TorchGNN::writeMethods(std::string dir, std::string name, std::strin
                         (line.find("del_string") == std::string::npos)) {
                         line.replace(line.find(del_string), del_string.size(), "\"");
                     }
+                    del_string = "gsl/gsl_cblas.h";
+                    if ((line.find(del_string) != std::string::npos)  && (line.find("del_string") == std::string::npos)) {
+                        line.replace(line.find(del_string), del_string.size(), "cblas.h");
+                    }
                     temp << line << std::endl;
                 }
             }
