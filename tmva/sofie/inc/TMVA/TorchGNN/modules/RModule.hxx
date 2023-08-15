@@ -1,3 +1,6 @@
+// @(#)root/tmva/sofie:$Id$
+// Author: Stefan van Berkum
+
 /**
  * Base class for RModule objects used in GNNs.
  * 
@@ -5,8 +8,8 @@
  * can be layers, activations, or generic operations.
  * 
  * IMPORTANT: Besides the virtual methods, each RModule should assign its inputs
- * to the class variable "inputs" and other arguments to the class variable
- * "args" (in string format).
+ * to the class variable "fInputs" and other arguments to the class variable
+ * "fArgs" (in string format).
  * IMPORTANT: Changes to the format (e.g., namespaces) may affect the emit
  * defined in RModel_TorchGNN.cxx (save). To be safe, new modules should closely
  * follow the format of the exisiting modules (i.e., copy-paste and edit).
@@ -34,9 +37,9 @@ class RModule {
          * @param module_list Vector containing the modules.
          * @param module_map Map from module name to module index (in modules).
         */
-        void initialize(std::vector<std::shared_ptr<RModule>> module_list, std::map<std::string, int> module_map) {
-            for (std::string input: inputs) {
-                input_modules.push_back(module_list[module_map[input]]);
+        void Initialize(std::vector<std::shared_ptr<RModule>> module_list, std::map<std::string, int> module_map) {
+            for (std::string input: fInputs) {
+                fInputModules.push_back(module_list[module_map[input]]);
             }
         }
 
@@ -46,9 +49,9 @@ class RModule {
          * This triggers the module's forward method and stores the output and
          * its shape.
         */
-        void execute() {
-            out_shape = inferShape();  // Infer shape on the fly. TODO: Test impact on performance and possibly execute once for static models.
-            output = forward();
+        void Execute() {
+            fOutShape = InferShape();  // Infer shape on the fly. TODO: Test impact on performance and possibly execute once for static models.
+            fOutput = Forward();
         }
 
         /**
@@ -56,60 +59,60 @@ class RModule {
          * 
          * @param new_name New module name.
         */
-        void setName(std::string new_name) {name = new_name;}
+        void SetName(std::string new_name) {fName = new_name;}
 
         /**
          * Get this module's name.
          * 
          * @returns The module name.
         */
-        std::string_view getName() {return name;}
+        std::string_view GetName() {return fName;}
 
         /**
          * Get the module inputs.
          * 
          * @returns The inputs for this module.
         */
-        std::vector<std::string> getInputs() {return inputs;}
+        std::vector<std::string> GetInputs() {return fInputs;}
 
         /**
          * Get the module arguments.
         */
-        std::vector<std::string> getArgs() {return args;}
+        std::vector<std::string> GetArgs() {return fArgs;}
 
         /**
          * Get the output of the last call to this module.
          * 
          * @returns The output of the last call.
         */
-        std::vector<float> getOutput() {return output;}
+        std::vector<float> GetOutput() {return fOutput;}
 
         /**
          * Get the output shape of the last call to this module.
          * 
          * @returns The output shape of the last call.
         */
-        std::vector<int> getShape() {return out_shape;}
+        std::vector<int> GetShape() {return fOutShape;}
 
-        virtual std::vector<float> forward() = 0;  // Forward method to be implemented by each module.
+        virtual std::vector<float> Forward() = 0;  // Forward method to be implemented by each module.
 
-        virtual std::vector<int> inferShape() = 0;  // Output shape inference to be implemented by each module.
+        virtual std::vector<int> InferShape() = 0;  // Output shape inference to be implemented by each module.
 
-        virtual std::string_view getOperation() = 0;  // Operation name getter to be implemented by each module.
+        virtual std::string_view GetOperation() = 0;  // Operation name getter to be implemented by each module.
         
-        virtual void saveParameters(std::string dir) = 0;  // Parameter saver to be implemented by each module.
+        virtual void SaveParameters(std::string dir) = 0;  // Parameter saver to be implemented by each module.
 
-        virtual void loadParameters() = 0;  // Parameter loader to be implemented by each module.
+        virtual void LoadParameters() = 0;  // Parameter loader to be implemented by each module.
 
-        virtual void loadParameters(std::map<std::string, std::vector<float>>) = 0;  // Parameter loader to be implemented by each module.
+        virtual void LoadParameters(std::map<std::string, std::vector<float>>) = 0;  // Parameter loader to be implemented by each module.
     protected:
-        std::string name;  // Module name.  
-        std::vector<std::shared_ptr<RModule>> input_modules;  // Vector of input modules.
-        std::vector<std::string> inputs;  // Input names.
-        std::vector<std::string> args;  // Other arguments.
-        std::vector<int> out_shape;  // Output shape of last call.
+        std::string fName;  // Module name.  
+        std::vector<std::shared_ptr<RModule>> fInputModules;  // Vector of input modules.
+        std::vector<std::string> fInputs;  // Input names.
+        std::vector<std::string> fArgs;  // Other arguments.
+        std::vector<int> fOutShape;  // Output shape of last call.
     private:
-        std::vector<float> output;  // Output of last call.
+        std::vector<float> fOutput;  // Output of last call.
 };
 
 }  // TMVA.

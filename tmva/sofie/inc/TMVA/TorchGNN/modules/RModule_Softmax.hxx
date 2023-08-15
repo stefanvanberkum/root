@@ -1,3 +1,6 @@
+// @(#)root/tmva/sofie:$Id$
+// Author: Stefan van Berkum
+
 /**
  * Softmax module.
 */
@@ -20,8 +23,8 @@ class RModule_Softmax: public RModule {
          * @param x The input.
         */
         RModule_Softmax(std::string x) {
-            inputs = {x};
-            args = {};
+            fInputs = {x};
+            fArgs = {};
         }
 
         /** Destruct the module. */
@@ -34,15 +37,15 @@ class RModule_Softmax: public RModule {
          * 
          * @returns Result exp(x_i) / sum(exp(x_j)).
         */
-        std::vector<float> forward() {
-            std::vector<float> x = input_modules[0] -> getOutput();
-            int last_dim = input_modules[0] -> getShape().back();
+        std::vector<float> Forward() {
+            std::vector<float> x = fInputModules[0] -> GetOutput();
+            int last_dim = fInputModules[0] -> GetShape().back();
 
             for (std::size_t i = 0; i < x.size(); i += last_dim) {
                 float exps[last_dim];
                 float sum = 0;
                 for (std::size_t j = i; j < i + last_dim; j++) {
-                    exps[j - i] = exp(x[j]);
+                    exps[j - i] = std::exp(x[j]);
                     sum += exps[j - i];
                 }
                 for (std::size_t j = i; j < i + last_dim; j++) {
@@ -59,8 +62,8 @@ class RModule_Softmax: public RModule {
          * 
          * @returns The output shape.
         */
-        std::vector<int> inferShape() {
-            std::vector<int> shape = input_modules[0] -> getShape();
+        std::vector<int> InferShape() {
+            std::vector<int> shape = fInputModules[0] -> GetShape();
             return shape;
         }
 
@@ -69,7 +72,7 @@ class RModule_Softmax: public RModule {
          * 
          * @returns The name of the operation.
         */
-        std::string_view getOperation() {
+        std::string_view GetOperation() {
             return "Softmax";
         }
 
@@ -80,14 +83,14 @@ class RModule_Softmax: public RModule {
          * 
          * @param dir Save directory.
          */
-        void saveParameters([[maybe_unused]] std::string dir) {}
+        void SaveParameters([[maybe_unused]] std::string dir) {}
 
         /**
          * Load saved parameters.
          * 
          * Does nothing for this module.
         */
-        void loadParameters() {}
+        void LoadParameters() {}
 
         /**
          * Load parameters from PyTorch state dictionary.
@@ -96,7 +99,7 @@ class RModule_Softmax: public RModule {
          * 
          * @param state_dict The state dictionary.
         */
-        void loadParameters([[maybe_unused]] std::map<std::string, std::vector<float>> state_dict) {}
+        void LoadParameters([[maybe_unused]] std::map<std::string, std::vector<float>> state_dict) {}
 };
 
 }  // TMVA.

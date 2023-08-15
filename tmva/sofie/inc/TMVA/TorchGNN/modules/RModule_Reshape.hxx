@@ -1,3 +1,6 @@
+// @(#)root/tmva/sofie:$Id$
+// Author: Stefan van Berkum
+
 /**
  * Reshape module.
 */
@@ -24,8 +27,8 @@ class RModule_Reshape: public RModule {
          * @param shape The desired shape.
         */
         RModule_Reshape(std::string x, std::vector<int> shape) {
-            s = shape;
-            wildcard = std::find(shape.begin(), shape.end(), -1) - shape.begin();
+            fOutShape = shape;
+            fWildcard = std::find(shape.begin(), shape.end(), -1) - shape.begin();
 
             // Check shape.
             if (std::any_of(shape.begin(), shape.end(), [](int i){return i == 0;})) {
@@ -51,8 +54,8 @@ class RModule_Reshape: public RModule {
             }
             shape_arg += "}";
 
-            inputs = {x};
-            args = {shape_arg};
+            fInputs = {x};
+            fArgs = {shape_arg};
         }
 
         /** Destruct the module. */
@@ -65,8 +68,8 @@ class RModule_Reshape: public RModule {
          * 
          * @returns The input.
         */
-        std::vector<float> forward() {
-            std::vector<float> x = input_modules[0] -> getOutput();
+        std::vector<float> Forward() {
+            std::vector<float> x = fInputModules[0] -> GetOutput();
             return x;
         }
 
@@ -77,16 +80,16 @@ class RModule_Reshape: public RModule {
          * 
          * @returns The output shape.
         */
-        std::vector<int> inferShape() {
+        std::vector<int> InferShape() {
             int cprod = 1;
-            for (std::size_t i = 0; i < s.size(); i++) {
-                if (i != wildcard) {
-                    cprod *= s[i];
+            for (std::size_t i = 0; i < fOutShape.size(); i++) {
+                if (i != fWildcard) {
+                    cprod *= fOutShape[i];
                 }
             }
-            std::vector<int> shape = s;
-            std::vector<float> x = input_modules[0] -> getOutput();
-            shape[wildcard] = x.size() / cprod;
+            std::vector<int> shape = fOutShape;
+            std::vector<float> x = fInputModules[0] -> GetOutput();
+            shape[fWildcard] = x.size() / cprod;
             return shape;
         }
 
@@ -95,7 +98,7 @@ class RModule_Reshape: public RModule {
          * 
          * @returns The name of the operation.
         */
-        std::string_view getOperation() {
+        std::string_view GetOperation() {
             return "Reshape";
         }
 
@@ -106,14 +109,14 @@ class RModule_Reshape: public RModule {
          * 
          * @param dir Save directory.
          */
-        void saveParameters([[maybe_unused]] std::string dir) {}
+        void SaveParameters([[maybe_unused]] std::string dir) {}
 
         /**
          * Load saved parameters.
          * 
          * Does nothing for this module.
         */
-        void loadParameters() {}
+        void LoadParameters() {}
 
         /**
          * Load parameters from PyTorch state dictionary.
@@ -122,10 +125,10 @@ class RModule_Reshape: public RModule {
          * 
          * @param state_dict The state dictionary.
         */
-        void loadParameters([[maybe_unused]] std::map<std::string, std::vector<float>> state_dict) {}
+        void LoadParameters([[maybe_unused]] std::map<std::string, std::vector<float>> state_dict) {}
     private:
-        std::size_t wildcard;  // Index of the wildcard dimension.
-        std::vector<int> s;  // Desired output shape.
+        std::size_t fWildcard;  // Index of the wildcard dimension.
+        std::vector<int> fOutShape;  // Desired output shape.
 };
 
 }  // TMVA.

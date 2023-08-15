@@ -1,3 +1,6 @@
+// @(#)root/tmva/sofie:$Id$
+// Author: Stefan van Berkum
+
 /**
  * Linear module.
  * 
@@ -29,16 +32,16 @@ class RModule_Linear: public RModule {
          * @param bias True if a bias is included. Defaults to true.
         */
         RModule_Linear(std::string x, int in_features, int out_features, bool bias=true) {
-            input_features = in_features;
-            output_features = out_features;
-            include_bias = bias;
+            fInputFeatures = in_features;
+            fOutputFeatures = out_features;
+            fIncludeBias = bias;
 
-            if (!include_bias) {
-                b = std::vector<float>(output_features);
+            if (!fIncludeBias) {
+                fB = std::vector<float>(fOutputFeatures);
             }
 
-            inputs = {x};
-            args = {std::to_string(in_features), std::to_string(out_features), std::to_string(bias)};
+            fInputs = {x};
+            fArgs = {std::to_string(in_features), std::to_string(out_features), std::to_string(bias)};
         }
 
         /** Destruct the module. */
@@ -50,32 +53,32 @@ class RModule_Linear: public RModule {
          * 
          * @returns Result (Ax + b) for each element.
         */
-        std::vector<float> forward() {
-            std::vector<float> in = input_modules[0] -> getOutput();
+        std::vector<float> Forward() {
+            std::vector<float> in = fInputModules[0] -> GetOutput();
             std::vector<float> out;
-            out.reserve(n_out);
+            out.reserve(fNumOut);
 
-            if (row_dim > 1) {
+            if (fRowDim > 1) {
                 // Perform matrix multiplications (Y = XA^T + 1b^T := XA^T + B).
                 // X, shape (m, k) -> (row_dim, input_features).
                 // A, shape (n, k) -> (output_features, input_features).
                 // B, shape (m, n) -> (row_dim, output_features).
-                int m = row_dim;
-                int k = input_features;
-                int n = output_features;
-                for (std::size_t i = 0; i < in.size(); i += row_dim * input_features) {
+                int m = fRowDim;
+                int k = fInputFeatures;
+                int n = fOutputFeatures;
+                for (std::size_t i = 0; i < in.size(); i += fRowDim * fInputFeatures) {
                     // Get input matrix.
-                    std::vector<float> X(in.begin() + i, in.begin() + i + row_dim * input_features);
+                    std::vector<float> X(in.begin() + i, in.begin() + i + fRowDim * fInputFeatures);
 
-                    std::vector<float> B(row_dim * output_features, 0); 
-                    if (include_bias) {
+                    std::vector<float> B(fRowDim * fOutputFeatures, 0); 
+                    if (fIncludeBias) {
                         // Construct bias matrix (B = 1b^T).
-                        std::vector<float> one(row_dim, 1);
-                        cblas_sger(CblasRowMajor, row_dim, output_features, 1, one.data(), 1, b.data(), 1, B.data(), output_features);
+                        std::vector<float> one(fRowDim, 1);
+                        cblas_sger(CblasRowMajor, fRowDim, fOutputFeatures, 1, one.data(), 1, fB.data(), 1, B.data(), fOutputFeatures);
                     }
 
                     // Perform matrix multiplication (Y = XA^T + B).
-                    cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasTrans, m, n, k, 1, X.data(), k, A.data(), k, 1, B.data(), n);
+                    cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasTrans, m, n, k, 1, X.data(), k, fA.data(), k, 1, B.data(), n);
                     for (float elem: B) {  // cblas sets (B = XA^T + B).
                         out.push_back(elem);
                     }
@@ -85,17 +88,17 @@ class RModule_Linear: public RModule {
                 // A, shape (n, m) -> (output_features, input_features).
                 // x, shape (m, 1) -> (input_features, 1).
                 // b, shape (n, 1) -> (output_features, 1).
-                int m = input_features;
-                int n = output_features;
-                for (std::size_t i = 0; i < in.size(); i += input_features) {
+                int m = fInputFeatures;
+                int n = fOutputFeatures;
+                for (std::size_t i = 0; i < in.size(); i += fInputFeatures) {
                     // Get input vector.
-                    std::vector<float> x(in.begin() + i, in.begin() + i + input_features);
+                    std::vector<float> x(in.begin() + i, in.begin() + i + fInputFeatures);
 
                     // Copy bias.
-                    std::vector<float> y(b);
+                    std::vector<float> y(fB);
 
                     // Perform matrix-vector multiplication (y = Ax + b).
-                    cblas_sgemv(CblasRowMajor, CblasNoTrans, n, m, 1, A.data(), m, x.data(), 1, 1, y.data(), 1);
+                    cblas_sgemv(CblasRowMajor, CblasNoTrans, n, m, 1, fA.data(), m, x.data(), 1, 1, y.data(), 1);
                     for (float elem: y) {  // cblas sets (b = Ax + b).
                         out.push_back(elem);
                     }
@@ -112,17 +115,17 @@ class RModule_Linear: public RModule {
          * 
          * @returns The output shape.
         */
-        std::vector<int> inferShape() {
-            std::vector<int> shape = input_modules[0] -> getShape();
-            shape.back() = output_features;
+        std::vector<int> InferShape() {
+            std::vector<int> shape = fInputModules[0] -> GetShape();
+            shape.back() = fOutputFeatures;
 
             if (shape.size() > 1) {
-                row_dim = shape[shape.size() - 2];
+                fRowDim = shape[shape.size() - 2];
             }
 
-            n_out = 1;
+            fNumOut = 1;
             for (int dim: shape) {
-                n_out *= dim;
+                fNumOut *= dim;
             }
             return shape;
         }
@@ -132,7 +135,7 @@ class RModule_Linear: public RModule {
          * 
          * @returns The name of the operation.
         */
-        std::string_view getOperation() {
+        std::string_view GetOperation() {
             return "Linear";
         }
 
@@ -141,31 +144,31 @@ class RModule_Linear: public RModule {
          * 
          * @param weights The weight matrix.
         */
-        void setWeights(std::vector<float> weights) {A = weights;}
+        void SetWeights(std::vector<float> weights) {fA = weights;}
 
         /**
          * Set the biases.
          * 
          * @param biases The bias vector.
         */
-        void setBiases(std::vector<float> biases) {b = biases;}
+        void SetBiases(std::vector<float> biases) {fB = biases;}
 
         /** 
          * Save parameters.
          * 
          * @param dir Save directory.
          */
-        void saveParameters(std::string dir) {
+        void SaveParameters(std::string dir) {
             // Save weights.
-            std::string fdir = dir + "/" + name + "_weight.dat";
+            std::string fdir = dir + "/" + fName + "_weight.dat";
             std::ofstream outfile = std::ofstream(fdir, std::ios::out | std::ios::binary);
-            outfile.write(reinterpret_cast<char*>(&A[0]), A.size() * sizeof(float));
+            outfile.write(reinterpret_cast<char*>(&fA[0]), fA.size() * sizeof(float));
             
-            if (include_bias) {
+            if (fIncludeBias) {
                 // Save biases.
-                fdir = dir + "/" + name + "_bias.dat";
+                fdir = dir + "/" + fName + "_bias.dat";
                 outfile = std::ofstream(fdir, std::ios::out | std::ios::binary);
-                outfile.write(reinterpret_cast<char*>(&b[0]), b.size() * sizeof(float));
+                outfile.write(reinterpret_cast<char*>(&fB[0]), fB.size() * sizeof(float));
             }
             outfile.close();
         }
@@ -173,24 +176,24 @@ class RModule_Linear: public RModule {
         /**
          * Load saved parameters.
         */
-        void loadParameters() {
+        void LoadParameters() {
             std::string dir = __FILE__;
             std::string del_string = "inc/modules/RModule_Linear.hxx";
             dir.replace(dir.find(del_string), del_string.size(), "params/");
 
             // Load weights.
-            std::string param_dir = dir + name + "_weight.dat";
+            std::string param_dir = dir + fName + "_weight.dat";
             std::ifstream infile = std::ifstream(param_dir, std::ios::in | std::ios::binary);
-            A = std::vector<float>(input_features * output_features);
-            infile.read(reinterpret_cast<char*>(&A[0]), A.size() * sizeof(float));
+            fA = std::vector<float>(fInputFeatures * fOutputFeatures);
+            infile.read(reinterpret_cast<char*>(&fA[0]), fA.size() * sizeof(float));
             infile.close();
 
-            if (include_bias) {
+            if (fIncludeBias) {
                 // Load biases.
-                param_dir = dir + name + "_bias.dat";
+                param_dir = dir + fName + "_bias.dat";
                 infile = std::ifstream(param_dir, std::ios::in | std::ios::binary);
-                b = std::vector<float>(output_features);
-                infile.read(reinterpret_cast<char*>(&b[0]), b.size() * sizeof(float));
+                fB = std::vector<float>(fOutputFeatures);
+                infile.read(reinterpret_cast<char*>(&fB[0]), fB.size() * sizeof(float));
                 infile.close();
             }
         }
@@ -200,29 +203,29 @@ class RModule_Linear: public RModule {
          * 
          * @param state_dict The state dictionary.
         */
-        void loadParameters(std::map<std::string, std::vector<float>> state_dict) {
-            if (auto search = state_dict.find(name + ".weight"); search != state_dict.end()) {
-                A = state_dict[name + ".weight"];
+        void LoadParameters(std::map<std::string, std::vector<float>> state_dict) {
+            if (auto search = state_dict.find(fName + ".weight"); search != state_dict.end()) {
+                fA = state_dict[fName + ".weight"];
             } else {
-                std::cout << "WARNING: Weights for module " << name << " not found." << std::endl;
+                std::cout << "WARNING: Weights for module " << fName << " not found." << std::endl;
             }
             
-            if (include_bias) {
-                if (auto search = state_dict.find(name + ".bias"); search != state_dict.end()) {
-                    b = state_dict[name + ".bias"];
+            if (fIncludeBias) {
+                if (auto search = state_dict.find(fName + ".bias"); search != state_dict.end()) {
+                    fB = state_dict[fName + ".bias"];
                 } else {
-                    std::cout << "WARNING: Biases for module " << name << " not found." << std::endl;
+                    std::cout << "WARNING: Biases for module " << fName << " not found." << std::endl;
                 }
             }
         }
     private:
-        int input_features;  // The size of each input sample.
-        int output_features;  // The size of each output sample.
-        bool include_bias;  // True if a bias is included.
-        int row_dim = 1;  // Size of the second to last input dimension.
-        int n_out;  // The number of output elements.
-        std::vector<float> A;  // Weight matrix A.
-        std::vector<float> b;  // Bias vector b.
+        int fInputFeatures;  // The size of each input sample.
+        int fOutputFeatures;  // The size of each output sample.
+        bool fIncludeBias;  // True if a bias is included.
+        int fRowDim = 1;  // Size of the second to last input dimension.
+        int fNumOut;  // The number of output elements.
+        std::vector<float> fA;  // Weight matrix A.
+        std::vector<float> fB;  // Bias vector b.
 };
 
 }  // TMVA.

@@ -1,3 +1,6 @@
+// @(#)root/tmva/sofie:$Id$
+// Author: Stefan van Berkum
+
 /**
  * Source file for PyTorch Geometric models.
  * 
@@ -29,11 +32,11 @@ namespace SOFIE {
  * @param overwrite True if any existing directory should be
  * overwritten. Defaults to false.
 */
-void RModel_TorchGNN::save(std::string path, std::string name, bool overwrite /*=false*/) {
+void RModel_TorchGNN::Save(std::string path, std::string name, bool overwrite /*=false*/) {
     std::string dir = path + "/" + name;
 
     // Get timestamp.
-    std::string timestamp = getTimestamp();
+    std::string timestamp = GetTimestamp();
     
     if (std::filesystem::exists(dir)) {
         if (overwrite) {
@@ -47,13 +50,13 @@ void RModel_TorchGNN::save(std::string path, std::string name, bool overwrite /*
     std::filesystem::create_directories(dir);
 
     // Write methods.
-    writeMethods(dir, name, timestamp);
+    WriteMethods(dir, name, timestamp);
     
     // Write model.
-    writeModel(dir, name, timestamp);
+    WriteModel(dir, name, timestamp);
 
     // Write CMakeLists.
-    writeCMakeLists(dir, name, timestamp);
+    WriteCMakeLists(dir, name, timestamp);
 
     // Create parameter directory.
     std::filesystem::path param_dir = std::filesystem::path(dir);
@@ -61,8 +64,8 @@ void RModel_TorchGNN::save(std::string path, std::string name, bool overwrite /*
     std::filesystem::create_directory(param_dir);
     
     // Save parameters.
-    for (std::shared_ptr<RModule> m: modules) {
-        m -> saveParameters(param_dir);
+    for (std::shared_ptr<RModule> m: fModules) {
+        m -> SaveParameters(param_dir);
     }
 }
 
@@ -73,7 +76,7 @@ void RModel_TorchGNN::save(std::string path, std::string name, bool overwrite /*
  * @param name Model name.
  * @param timestamp Timestamp.
 */
-void RModel_TorchGNN::writeMethods(std::string dir, std::string name, std::string timestamp) {
+void RModel_TorchGNN::WriteMethods(std::string dir, std::string name, std::string timestamp) {
     // Retrieve directories.
     std::filesystem::path src_dir = std::filesystem::path(__FILE__).parent_path();
     std::filesystem::path inc_dir = src_dir.parent_path().parent_path();
@@ -162,7 +165,7 @@ void RModel_TorchGNN::writeMethods(std::string dir, std::string name, std::strin
  * @param name Model name.
  * @param timestamp Timestamp.
 */
-void RModel_TorchGNN::writeModel(std::string dir, std::string name, std::string timestamp) {
+void RModel_TorchGNN::WriteModel(std::string dir, std::string name, std::string timestamp) {
     std::ofstream model;
     model.open(dir + "/inc/" + name + ".hxx");
     
@@ -174,14 +177,14 @@ void RModel_TorchGNN::writeModel(std::string dir, std::string name, std::string 
     // Write includes and save parameters.
     model << "#include \"RModel_TorchGNN.hxx\"" << std::endl;
     std::set<std::string_view> used_modules;
-    for (std::shared_ptr<RModule> m: modules) {
+    for (std::shared_ptr<RModule> m: fModules) {
         // Record module operation.
-        used_modules.insert(m -> getOperation());
+        used_modules.insert(m -> GetOperation());
 
         // Save parameters.
-        std::string module_dir = dir + "/" + std::string(m -> getName());
+        std::string module_dir = dir + "/" + std::string(m -> GetName());
         std::filesystem::create_directory(dir + "/");
-        m -> saveParameters(module_dir);
+        m -> SaveParameters(module_dir);
     }
     for (std::string_view m: used_modules) {
         model << "#include \"modules/RModule_" << m << ".hxx\"" << std::endl;
@@ -196,7 +199,7 @@ void RModel_TorchGNN::writeModel(std::string dir, std::string name, std::string 
     // Write model construction.
     model << "\t\t" << name << "(): RModel_TorchGNN({";
     bool first = true;
-    for (std::string in: inputs) {  // Input names.
+    for (std::string in: fInputs) {  // Input names.
         if (!first) {
             model << ", ";
         } else {
@@ -206,7 +209,7 @@ void RModel_TorchGNN::writeModel(std::string dir, std::string name, std::string 
     }
     model << "}, {";
     first = true;
-    for (std::vector<int> in_shape: shapes) {  // Input shapes.
+    for (std::vector<int> in_shape: fShapes) {  // Input shapes.
         if (!first) {
             model << ", ";
         } else {
@@ -227,16 +230,16 @@ void RModel_TorchGNN::writeModel(std::string dir, std::string name, std::string 
     model << "}) {" << std::endl;
     
     // Write module additions.
-    for (std::shared_ptr<RModule> m: modules) {
-        if ((m -> getOperation()) == "Input") {
+    for (std::shared_ptr<RModule> m: fModules) {
+        if ((m -> GetOperation()) == "Input") {
             // Skip input modules.
             continue;
         }
 
-        std::string_view module_name = m -> getName();
-        std::string_view op = m -> getOperation();
-        std::vector<std::string> module_inputs = m -> getInputs();
-        model << "\t\t\taddModule(RModule_" << op << "(";
+        std::string_view module_name = m -> GetName();
+        std::string_view op = m -> GetOperation();
+        std::vector<std::string> module_inputs = m -> GetInputs();
+        model << "\t\t\tAddModule(RModule_" << op << "(";
         first = true;
         for (std::string in: module_inputs) {  // Input names.
             if (!first) {
@@ -246,16 +249,16 @@ void RModel_TorchGNN::writeModel(std::string dir, std::string name, std::string 
             }
             model << "\"" << in << "\"";
         }
-        std::vector<std::string> module_args = m -> getArgs();
+        std::vector<std::string> module_args = m -> GetArgs();
         for (std::string arg: module_args) {  // Other arguments.
             model << ", " << arg;
         }
         model << "), \"" << module_name << "\");" << std::endl;
     }
     // Write parameter loading.
-    model << "\t\t\tloadParameters();" << std::endl;
+    model << "\t\t\tLoadParameters();" << std::endl;
 
-    model << "\t}" << std::endl;
+    model << "\t\t}" << std::endl;
     model << "};" << std::endl;
     model.close();
 }
@@ -267,7 +270,7 @@ void RModel_TorchGNN::writeModel(std::string dir, std::string name, std::string 
  * @param name Model name.
  * @param timestamp Timestamp.
 */
-void RModel_TorchGNN::writeCMakeLists(std::string dir, std::string name, std::string timestamp) {
+void RModel_TorchGNN::WriteCMakeLists(std::string dir, std::string name, std::string timestamp) {
     std::ofstream f;
     f.open(dir + "/CMakeLists.txt");
     

@@ -1,3 +1,6 @@
+// @(#)root/tmva/sofie:$Id$
+// Author: Stefan van Berkum
+
 /**
  * Global mean pooling module.
 */
@@ -24,8 +27,8 @@ class RModule_GlobalMeanPool: public RModule {
          * specific graph.
         */
         RModule_GlobalMeanPool(std::string X, std::string batch) {
-            inputs = {X, batch};
-            args = {};
+            fInputs = {X, batch};
+            fArgs = {};
         }
 
         /** Destruct the module. */
@@ -36,13 +39,13 @@ class RModule_GlobalMeanPool: public RModule {
          * 
          * @returns The pooled output.
         */
-        std::vector<float> forward() {
-            std::vector<float> x = input_modules[0] -> getOutput();
-            std::vector<float> batch_float = input_modules[1] -> getOutput();
+        std::vector<float> Forward() {
+            std::vector<float> x = fInputModules[0] -> GetOutput();
+            std::vector<float> batch_float = fInputModules[1] -> GetOutput();
             std::vector<int> batch(batch_float.begin(), batch_float.end());
 
-            int n_unique = out_shape[0];
-            int n_features = out_shape[1];
+            int n_unique = fOutShape[0];
+            int n_features = fOutShape[1];
             
             std::vector<float> out = std::vector<float>(n_unique * n_features);
 
@@ -80,10 +83,10 @@ class RModule_GlobalMeanPool: public RModule {
          * 
          * @returns The output shape.
         */
-        std::vector<int> inferShape() {
-            std::vector<float> batch_float = input_modules[1] -> getOutput();
+        std::vector<int> InferShape() {
+            std::vector<float> batch_float = fInputModules[1] -> GetOutput();
 
-            std::vector<int> shape = input_modules[0] -> getShape();
+            std::vector<int> shape = fInputModules[0] -> GetShape();
             shape[0] = std::set<int>(batch_float.begin(), batch_float.end()).size();
             return shape;
         }
@@ -93,7 +96,7 @@ class RModule_GlobalMeanPool: public RModule {
          * 
          * @returns The name of the operation.
         */
-        std::string_view getOperation() {
+        std::string_view GetOperation() {
             return "GlobalMeanPool";
         }
 
@@ -104,14 +107,14 @@ class RModule_GlobalMeanPool: public RModule {
          * 
          * @param dir Save directory.
          */
-        void saveParameters([[maybe_unused]] std::string dir) {}
+        void SaveParameters([[maybe_unused]] std::string dir) {}
 
         /**
          * Load saved parameters.
          * 
          * Does nothing for this module.
         */
-        void loadParameters() {}
+        void LoadParameters() {}
 
         /**
          * Load parameters from PyTorch state dictionary.
@@ -120,7 +123,7 @@ class RModule_GlobalMeanPool: public RModule {
          * 
          * @param state_dict The state dictionary.
         */
-        void loadParameters([[maybe_unused]] std::map<std::string, std::vector<float>> state_dict) {}
+        void LoadParameters([[maybe_unused]] std::map<std::string, std::vector<float>> state_dict) {}
 };
 
 }  // TMVA.

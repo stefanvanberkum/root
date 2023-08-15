@@ -1,3 +1,6 @@
+// @(#)root/tmva/sofie:$Id$
+// Author: Stefan van Berkum
+
 /**
  * ReLU module.
 */
@@ -21,8 +24,8 @@ class RModule_ReLU: public RModule {
          * @param x The input.
         */
         RModule_ReLU(std::string x) {
-            inputs = {x};
-            args = {};
+            fInputs = {x};
+            fArgs = {};
         }
 
         /** Destruct the module. */
@@ -33,8 +36,8 @@ class RModule_ReLU: public RModule {
          * 
          * @returns Result min(0, x).
         */
-        std::vector<float> forward() {
-            std::vector<float> x = input_modules[0] -> getOutput();
+        std::vector<float> Forward() {
+            std::vector<float> x = fInputModules[0] -> GetOutput();
 
             for (std::size_t i = 0; i < x.size(); i++) {
                 if (x[i] < 0) {
@@ -52,8 +55,8 @@ class RModule_ReLU: public RModule {
          * 
          * @returns The output shape.
         */
-        std::vector<int> inferShape() {
-            std::vector<int> shape = input_modules[0] -> getShape();
+        std::vector<int> InferShape() {
+            std::vector<int> shape = fInputModules[0] -> GetShape();
             return shape;
         }
 
@@ -62,7 +65,7 @@ class RModule_ReLU: public RModule {
          * 
          * @returns The name of the operation.
         */
-        std::string_view getOperation() {
+        std::string_view GetOperation() {
             return "ReLU";
         }
 
@@ -73,14 +76,14 @@ class RModule_ReLU: public RModule {
          * 
          * @param dir Save directory.
          */
-        void saveParameters([[maybe_unused]] std::string dir) {}
+        void SaveParameters([[maybe_unused]] std::string dir) {}
 
         /**
          * Load saved parameters.
          * 
          * Does nothing for this module.
         */
-        void loadParameters() {}
+        void LoadParameters() {}
 
         /**
          * Load parameters from PyTorch state dictionary.
@@ -89,7 +92,7 @@ class RModule_ReLU: public RModule {
          * 
          * @param state_dict The state dictionary.
         */
-        void loadParameters([[maybe_unused]] std::map<std::string, std::vector<float>> state_dict) {}
+        void LoadParameters([[maybe_unused]] std::map<std::string, std::vector<float>> state_dict) {}
 };
 
 }  // TMVA.

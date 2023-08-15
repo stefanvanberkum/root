@@ -1,3 +1,6 @@
+// @(#)root/tmva/sofie:$Id$
+// Author: Stefan van Berkum
+
 /**
  * Graph convolution module using Eigen for sparse operations.
  * 
@@ -39,20 +42,20 @@ class RModule_SparseGCNConv: public RModule {
          * @param bias True if a bias is included. Defaults to true.
         */
         RModule_SparseGCNConv(std::string x, std::string edge_index, int in_features, int out_features, bool improved=false, bool add_self_loops=true, bool normalize=true, bool bias=true) {
-            input_features = in_features;
-            output_features = out_features;
-            improve = improved;
-            self_loops = add_self_loops;
-            normalization = normalize;
-            include_bias = bias;
-            edge_weights = false;
+            fInputFeatures = in_features;
+            fOutputFeatures = out_features;
+            fImprove = improved;
+            fSelfLoops = add_self_loops;
+            fNormalization = normalize;
+            fIncludeBias = bias;
+            fEdgeWeights = false;
 
-            if (!include_bias) {
-                b = std::vector<float>(output_features);
+            if (!fIncludeBias) {
+                fB = std::vector<float>(fOutputFeatures);
             }
 
-            inputs = {x, edge_index};
-            args = {std::to_string(in_features), std::to_string(out_features), std::to_string(improved), std::to_string(add_self_loops), std::to_string(normalize), std::to_string(bias)};
+            fInputs = {x, edge_index};
+            fArgs = {std::to_string(in_features), std::to_string(out_features), std::to_string(improved), std::to_string(add_self_loops), std::to_string(normalize), std::to_string(bias)};
         }
 
         /**
@@ -72,20 +75,20 @@ class RModule_SparseGCNConv: public RModule {
          * @param bias True if a bias is included. Defaults to true.
         */
         RModule_SparseGCNConv(std::string x, std::string edge_index, std::string edge_weight, int in_features, int out_features, bool improved=false, bool add_self_loops=true, bool normalize=true, bool bias=true) {
-            input_features = in_features;
-            output_features = out_features;
-            improve = improved;
-            self_loops = add_self_loops;
-            normalization = normalize;
-            include_bias = bias;
-            edge_weights = true;
+            fInputFeatures = in_features;
+            fOutputFeatures = out_features;
+            fImprove = improved;
+            fSelfLoops = add_self_loops;
+            fNormalization = normalize;
+            fIncludeBias = bias;
+            fEdgeWeights = true;
 
-            if (!include_bias) {
-                b = std::vector<float>(output_features);
+            if (!fIncludeBias) {
+                fB = std::vector<float>(fOutputFeatures);
             }
 
-            inputs = {x, edge_index, edge_weight};
-            args = {std::to_string(in_features), std::to_string(out_features), std::to_string(improved), std::to_string(add_self_loops), std::to_string(normalize), std::to_string(bias)};
+            fInputs = {x, edge_index, edge_weight};
+            fArgs = {std::to_string(in_features), std::to_string(out_features), std::to_string(improved), std::to_string(add_self_loops), std::to_string(normalize), std::to_string(bias)};
         }
 
         /** Destruct the module. */
@@ -96,16 +99,16 @@ class RModule_SparseGCNConv: public RModule {
          * 
          * @returns The updated feature matrix.
         */
-        std::vector<float> forward() {
-            std::vector<float> X = input_modules[0] -> getOutput();
-            std::vector<float> edge_index_f = input_modules[1] -> getOutput();
+        std::vector<float> Forward() {
+            std::vector<float> X = fInputModules[0] -> GetOutput();
+            std::vector<float> edge_index_f = fInputModules[1] -> GetOutput();
 
-            std::size_t n_nodes = X.size() / input_features;
+            std::size_t n_nodes = X.size() / fInputFeatures;
             std::size_t n_edges = edge_index_f.size() / 2;
             
             std::vector<float> edge_weight;
-            if (edge_weights) {
-                std::vector<float> edge_weight_f = input_modules[2] -> getOutput();
+            if (fEdgeWeights) {
+                std::vector<float> edge_weight_f = fInputModules[2] -> GetOutput();
             } else {
                 edge_weight = std::vector<float>(n_edges, 1);
             }
@@ -123,9 +126,9 @@ class RModule_SparseGCNConv: public RModule {
             A.setFromTriplets(edge_list.begin(), edge_list.end());
             
             typedef Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> rMatrix;
-            if (normalization) {
-                if (self_loops) {
-                    if (improve) {
+            if (fNormalization) {
+                if (fSelfLoops) {
+                    if (fImprove) {
                         A = A + 2 * rMatrix::Identity(n_nodes, n_nodes);
                         degree = std::vector<float>(n_nodes, 2);
                     } else {
@@ -148,16 +151,16 @@ class RModule_SparseGCNConv: public RModule {
             auto D = d.asDiagonal();
             A = D * A * D;
             
-            Eigen::Map<rMatrix> X_m(X.data(), n_nodes, input_features);
-            Eigen::Map<rMatrix> theta(W.data(), output_features, input_features);
+            Eigen::Map<rMatrix> X_m(X.data(), n_nodes, fInputFeatures);
+            Eigen::Map<rMatrix> theta(fW.data(), fOutputFeatures, fInputFeatures);
             rMatrix out = A * X_m * theta.transpose();
 
-            if (include_bias) {
-                Eigen::Map<Eigen::RowVectorXf> bias(b.data(), output_features);
+            if (fIncludeBias) {
+                Eigen::Map<Eigen::RowVectorXf> bias(fB.data(), fOutputFeatures);
                 out = out.rowwise() + bias;
             }
 
-            return std::vector<float>(out.data(), out.data() + n_nodes * output_features);
+            return std::vector<float>(out.data(), out.data() + n_nodes * fOutputFeatures);
         }
 
         /**
@@ -169,9 +172,9 @@ class RModule_SparseGCNConv: public RModule {
          * 
          * @returns The output shape.
         */
-        std::vector<int> inferShape() {
-            std::vector<int> shape = input_modules[0] -> getShape();
-            shape.back() = output_features;
+        std::vector<int> InferShape() {
+            std::vector<int> shape = fInputModules[0] -> GetShape();
+            shape.back() = fOutputFeatures;
             return shape;
         }
 
@@ -180,7 +183,7 @@ class RModule_SparseGCNConv: public RModule {
          * 
          * @returns The name of the operation.
         */
-        std::string_view getOperation() {
+        std::string_view GetOperation() {
             return "SparseGCNConv";
         }
 
@@ -189,31 +192,31 @@ class RModule_SparseGCNConv: public RModule {
          * 
          * @param weights The weight matrix.
         */
-        void setWeights(std::vector<float> weights) {W = weights;}
+        void SetWeights(std::vector<float> weights) {fW = weights;}
 
         /**
          * Set the biases.
          * 
          * @param biases The bias vector.
         */
-        void setBiases(std::vector<float> biases) {b = biases;}
+        void SetBiases(std::vector<float> biases) {fB = biases;}
 
         /** 
          * Save parameters.
          * 
          * @param dir Save directory.
          */
-        void saveParameters(std::string dir) {
+        void SaveParameters(std::string dir) {
             // Save weights.
-            std::string fdir = dir + "/" + name + "_lin_weight.dat";
+            std::string fdir = dir + "/" + fName + "_lin_weight.dat";
             std::ofstream outfile = std::ofstream(fdir, std::ios::out | std::ios::binary);
-            outfile.write(reinterpret_cast<char*>(&W[0]), W.size() * sizeof(float));
+            outfile.write(reinterpret_cast<char*>(&fW[0]), fW.size() * sizeof(float));
             
-            if (include_bias) {
+            if (fIncludeBias) {
                 // Save biases.
-                fdir = dir + "/" + name + "_bias.dat";
+                fdir = dir + "/" + fName + "_bias.dat";
                 outfile = std::ofstream(fdir, std::ios::out | std::ios::binary);
-                outfile.write(reinterpret_cast<char*>(&b[0]), b.size() * sizeof(float));
+                outfile.write(reinterpret_cast<char*>(&fB[0]), fB.size() * sizeof(float));
             }
             outfile.close();
         }
@@ -221,24 +224,24 @@ class RModule_SparseGCNConv: public RModule {
         /**
          * Load saved parameters.
         */
-        void loadParameters() {
+        void LoadParameters() {
             std::string dir = __FILE__;
             std::string del_string = "inc/modules/RModule_SparseGCNConv.hxx";
             dir.replace(dir.find(del_string), del_string.size(), "params/");
 
             // Load weights.
-            std::string param_dir = dir + name + "_lin_weight.dat";
+            std::string param_dir = dir + fName + "_lin_weight.dat";
             std::ifstream infile = std::ifstream(param_dir, std::ios::in | std::ios::binary);
-            W = std::vector<float>(input_features * output_features);
-            infile.read(reinterpret_cast<char*>(&W[0]), W.size() * sizeof(float));
+            fW = std::vector<float>(fInputFeatures * fOutputFeatures);
+            infile.read(reinterpret_cast<char*>(&fW[0]), fW.size() * sizeof(float));
             infile.close();
 
-            if (include_bias) {
+            if (fIncludeBias) {
                 // Load biases.
-                param_dir = dir + name + "_bias.dat";
+                param_dir = dir + fName + "_bias.dat";
                 infile = std::ifstream(param_dir, std::ios::in | std::ios::binary);
-                b = std::vector<float>(output_features);
-                infile.read(reinterpret_cast<char*>(&b[0]), b.size() * sizeof(float));
+                fB = std::vector<float>(fOutputFeatures);
+                infile.read(reinterpret_cast<char*>(&fB[0]), fB.size() * sizeof(float));
                 infile.close();
             }
         }
@@ -248,31 +251,31 @@ class RModule_SparseGCNConv: public RModule {
          * 
          * @param state_dict The state dictionary.
         */
-        void loadParameters(std::map<std::string, std::vector<float>> state_dict) {
-            if (auto search = state_dict.find(name + ".lin.weight"); search != state_dict.end()) {
-                W = state_dict[name + ".lin.weight"];
+        void LoadParameters(std::map<std::string, std::vector<float>> state_dict) {
+            if (auto search = state_dict.find(fName + ".lin.weight"); search != state_dict.end()) {
+                fW = state_dict[fName + ".lin.weight"];
             } else {
-                std::cout << "WARNING: Weights for module " << name << " not found." << std::endl;
+                std::cout << "WARNING: Weights for module " << fName << " not found." << std::endl;
             }
             
-            if (include_bias) {
-                if (auto search = state_dict.find(name + ".bias"); search != state_dict.end()) {
-                    b = state_dict[name + ".bias"];
+            if (fIncludeBias) {
+                if (auto search = state_dict.find(fName + ".bias"); search != state_dict.end()) {
+                    fB = state_dict[fName + ".bias"];
                 } else {
-                    std::cout << "WARNING: Biases for module " << name << " not found." << std::endl;
+                    std::cout << "WARNING: Biases for module " << fName << " not found." << std::endl;
                 }
             }
         }
     private:
-        int input_features;  // The size of each input sample.
-        int output_features;  // The size of each output sample.
-        bool edge_weights;  // True if edge weights are provided.
-        bool improve;  // True if self-loops should get a weight of two.
-        bool self_loops;  // True if self-loops should be added.
-        bool normalization;  // True if edge weights should be normalized.
-        bool include_bias;  // True if a bias is included.
-        std::vector<float> W;  // Weight matrix W.
-        std::vector<float> b;  // Bias vector b.
+        int fInputFeatures;  // The size of each input sample.
+        int fOutputFeatures;  // The size of each output sample.
+        bool fEdgeWeights;  // True if edge weights are provided.
+        bool fImprove;  // True if self-loops should get a weight of two.
+        bool fSelfLoops;  // True if self-loops should be added.
+        bool fNormalization;  // True if edge weights should be normalized.
+        bool fIncludeBias;  // True if a bias is included.
+        std::vector<float> fW;  // Weight matrix W.
+        std::vector<float> fB;  // Bias vector b.
 };
 
 }  // TMVA.

@@ -1,3 +1,6 @@
+// @(#)root/tmva/sofie:$Id$
+// Author: Stefan van Berkum
+
 /**
  * Header file for PyTorch Geometric models.
  * 
@@ -7,8 +10,6 @@
  * defined in RModel_TorchGNN.cxx (save).
 */
 
-// TODO: Fix names to comply with ROOT styleguide.
-
 /**
  * Possible optimizations:
  * 
@@ -16,7 +17,6 @@
  *   pointer and modify the output directly. If larger than one, copy output.
  *   Possibly use forward(bool copy=false) and check in forward loop whether
  *   use_counts[i] > 1. If copy is needed, perhaps use cblas_scopy?
- * - Use sparse matrix operations (Eigen?).
 */
 
 
@@ -45,8 +45,8 @@ class RModel_TorchGNN {
          * at most one wildcard (-1).
         */
         RModel_TorchGNN(std::vector<std::string> input_names, std::vector<std::vector<int>> input_shapes) {
-            inputs = input_names;
-            shapes = input_shapes;
+            fInputs = input_names;
+            fShapes = input_shapes;
 
             // Generate input layers.
             for (std::size_t i = 0; i < input_names.size(); i++) {
@@ -60,7 +60,7 @@ class RModel_TorchGNN {
                 if (std::count(input_shapes[i].begin(), input_shapes[i].end(), -1) > 1) {
                     throw std::invalid_argument("Invalid input shape for input " + input_names[i] + ". Shape may have at most one wildcard.");
                 }
-                addModule(RModule_Input(input_shapes[i]), input_names[i]);
+                AddModule(RModule_Input(input_shapes[i]), input_names[i]);
             }
         }
 
@@ -72,12 +72,12 @@ class RModel_TorchGNN {
          * value (e.g., GCNConv_1).
         */
         template<typename T>
-        void addModule(T module, std::string name="") {
-            std::string new_name = (name == "") ? std::string(module.getOperation()) : name;
-            if (module_counts[new_name] > 0) {
+        void AddModule(T module, std::string name="") {
+            std::string new_name = (name == "") ? std::string(module.GetOperation()) : name;
+            if (fModuleCounts[new_name] > 0) {
                 // Module exists, so add discriminator and increment count.
-                new_name += "_" + std::to_string(module_counts[new_name]);
-                module_counts[new_name]++;
+                new_name += "_" + std::to_string(fModuleCounts[new_name]);
+                fModuleCounts[new_name]++;
 
                 if (name != "") {
                     // Issue warning.
@@ -85,17 +85,17 @@ class RModel_TorchGNN {
                 }
             } else {
                 // First module of its kind.
-                module_counts[new_name] = 1;
+                fModuleCounts[new_name] = 1;
             }
-            module.setName(new_name);
+            module.SetName(new_name);
 
             // Initialize the module.
-            module.initialize(modules, module_map);
+            module.Initialize(fModules, fModuleMap);
 
             // Add module to the module list.
-            modules.push_back(std::make_shared<T>(module));
-            module_map[std::string(module.getName())] = module_count;
-            module_count++;
+            fModules.push_back(std::make_shared<T>(module));
+            fModuleMap[std::string(module.GetName())] = fModuleCount;
+            fModuleCount++;
         }
         
         /**
@@ -105,23 +105,23 @@ class RModel_TorchGNN {
          * @returns The output of the last layer.
         */
         template<class... Types>
-        std::vector<float> forward(Types... args) {
+        std::vector<float> Forward(Types... args) {
             auto input = std::make_tuple(args...);
 
             // Instantiate input layers.
             int k = 0;
             std::apply(
                 [&](auto&... in) {
-                    ((std::dynamic_pointer_cast<RModule_Input>(modules[k++]) -> setParams(in)), ...);
+                    ((std::dynamic_pointer_cast<RModule_Input>(fModules[k++]) -> SetParams(in)), ...);
                 }, input);
 
             // Loop through and execute modules.
-            for (std::shared_ptr<RModule> module: modules) {
-                module -> execute();
+            for (std::shared_ptr<RModule> module: fModules) {
+                module -> Execute();
             }
 
             // Return output of the last layer.
-            return modules.back() -> getOutput();
+            return fModules.back() -> GetOutput();
         }
 
         /**
@@ -129,18 +129,18 @@ class RModel_TorchGNN {
          * 
          * @param state_dict The state dictionary.
         */
-        void loadParameters(std::map<std::string, std::vector<float>> state_dict) {
-            for (std::shared_ptr<RModule> module: modules) {
-                module -> loadParameters(state_dict);
+        void LoadParameters(std::map<std::string, std::vector<float>> state_dict) {
+            for (std::shared_ptr<RModule> module: fModules) {
+                module -> LoadParameters(state_dict);
             }
         }
 
         /**
          * Load saved parameters for all modules.
         */
-        void loadParameters() {
-            for (std::shared_ptr<RModule> module: modules) {
-                module -> loadParameters();
+        void LoadParameters() {
+            for (std::shared_ptr<RModule> module: fModules) {
+                module -> LoadParameters();
             }
         }
 
@@ -152,14 +152,14 @@ class RModel_TorchGNN {
          * @param overwrite True if any existing directory should be
          * overwritten. Defaults to false.
         */
-        void save(std::string path, std::string name, bool overwrite=false);
+        void Save(std::string path, std::string name, bool overwrite=false);
     private:
         /**
          * Get a timestamp.
          * 
          * @returns The timestamp in string format.
         */
-        static std::string getTimestamp() {
+        static std::string GetTimestamp() {
             time_t rawtime;
             struct tm * timeinfo;
             char timestamp [80];
@@ -176,7 +176,7 @@ class RModel_TorchGNN {
          * @param name Model name.
          * @param timestamp Timestamp.
         */
-        void writeMethods(std::string dir, std::string name, std::string timestamp);
+        void WriteMethods(std::string dir, std::string name, std::string timestamp);
 
         /**
          * Write the model to a file.
@@ -185,7 +185,7 @@ class RModel_TorchGNN {
          * @param name Model name.
          * @param timestamp Timestamp.
         */
-        void writeModel(std::string dir, std::string name, std::string timestamp);
+        void WriteModel(std::string dir, std::string name, std::string timestamp);
 
         /**
          * Write the CMakeLists file.
@@ -194,14 +194,14 @@ class RModel_TorchGNN {
          * @param name Model name.
          * @param timestamp Timestamp.
         */
-        void writeCMakeLists(std::string dir, std::string name, std::string timestamp);
+        void WriteCMakeLists(std::string dir, std::string name, std::string timestamp);
 
-        std::vector<std::string> inputs;  // Vector of input names.
-        std::vector<std::vector<int>> shapes;  // Vector of input shapes.
-        std::map<std::string, int> module_counts;  // Map from module name to number of occurrences.
-        std::vector<std::shared_ptr<RModule>> modules;  // Vector containing the modules.
-        std::map<std::string, int> module_map;  // Map from module name to module index (in modules).
-        int module_count = 0;  // Number of modules.
+        std::vector<std::string> fInputs;  // Vector of input names.
+        std::vector<std::vector<int>> fShapes;  // Vector of input shapes.
+        std::map<std::string, int> fModuleCounts;  // Map from module name to number of occurrences.
+        std::vector<std::shared_ptr<RModule>> fModules;  // Vector containing the modules.
+        std::map<std::string, int> fModuleMap;  // Map from module name to module index (in modules).
+        int fModuleCount = 0;  // Number of modules.
 };
 
 }  // SOFIE.

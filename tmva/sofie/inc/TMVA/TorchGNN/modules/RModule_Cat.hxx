@@ -1,3 +1,6 @@
+// @(#)root/tmva/sofie:$Id$
+// Author: Stefan van Berkum
+
 /**
  * Concatenation module.
 */
@@ -29,10 +32,10 @@ class RModule_Cat: public RModule {
          * @param dim Dimension along which to concatenate.
         */
         RModule_Cat(std::string a, std::string b, int dim) {
-            cdim = dim;
+            fCDim = dim;
             
-            inputs = {a, b};
-            args = {std::to_string(dim)};
+            fInputs = {a, b};
+            fArgs = {std::to_string(dim)};
         }
 
         /** Destruct the module. */
@@ -43,11 +46,11 @@ class RModule_Cat: public RModule {
          * 
          * @returns The concatenated array.
         */
-        std::vector<float> forward() {
-            std::vector<float> a = input_modules[0] -> getOutput();
-            std::vector<float> b = input_modules[1] -> getOutput();
+        std::vector<float> Forward() {
+            std::vector<float> a = fInputModules[0] -> GetOutput();
+            std::vector<float> b = fInputModules[1] -> GetOutput();
             std::shared_ptr<std::vector<float>> out = std::make_shared<std::vector<float>>();
-            recursive_cat(a, b, {}, out);
+            RecursiveCat(a, b, {}, out);
             return *out;
         }
 
@@ -59,30 +62,30 @@ class RModule_Cat: public RModule {
          * 
          * @returns The output shape.
         */
-        std::vector<int> inferShape() {
-            shape_a = input_modules[0] -> getShape();
-            shape_b = input_modules[1] -> getShape();
+        std::vector<int> InferShape() {
+            fShapeA = fInputModules[0] -> GetShape();
+            fShapeB = fInputModules[1] -> GetShape();
 
             // Check shapes.
-            for (std::size_t i = 0; i < shape_a.size(); i++) {
-                if (i != cdim && shape_a[i] != shape_b[i]) {
-                    std::vector<int> expected_shape = shape_a;
-                    expected_shape[cdim] = -1;
+            for (std::size_t i = 0; i < fShapeA.size(); i++) {
+                if (i != fCDim && fShapeA[i] != fShapeB[i]) {
+                    std::vector<int> expected_shape = fShapeA;
+                    expected_shape[fCDim] = -1;
                     std::string ex_s_str = "[" + std::to_string(expected_shape[0]);
-                    std::string b_s_str = "[" + std::to_string(shape_b[0]);
+                    std::string b_s_str = "[" + std::to_string(fShapeB[0]);
                     for (std::size_t j = 1; j < expected_shape.size(); j++) {
                         ex_s_str += ", " + std::to_string(expected_shape[j]);
-                        b_s_str += ", " + std::to_string(shape_b[j]);
+                        b_s_str += ", " + std::to_string(fShapeB[j]);
                     }
                     ex_s_str += "]";
                     b_s_str += "]";
-                    throw std::invalid_argument("Incompatible shapes in concatenation layer " + std::string(getName()) + ". Expected shape " + ex_s_str + ", got shape " + b_s_str + ".");
+                    throw std::invalid_argument("Incompatible shapes in concatenation layer " + std::string(GetName()) + ". Expected shape " + ex_s_str + ", got shape " + b_s_str + ".");
                 }
             }
 
-            std::vector<int> shape = shape_a;
-            shape[cdim] += shape_b[cdim];
-            dims = shape;
+            std::vector<int> shape = fShapeA;
+            shape[fCDim] += fShapeB[fCDim];
+            fDims = shape;
             return shape;
         }
 
@@ -91,7 +94,7 @@ class RModule_Cat: public RModule {
          * 
          * @returns The name of the operation.
         */
-        std::string_view getOperation() {
+        std::string_view GetOperation() {
             return "Cat";
         }
 
@@ -102,14 +105,14 @@ class RModule_Cat: public RModule {
          * 
          * @param dir Save directory.
          */
-        void saveParameters([[maybe_unused]] std::string dir) {}
+        void SaveParameters([[maybe_unused]] std::string dir) {}
 
         /**
          * Load saved parameters.
          * 
          * Does nothing for this module.
         */
-        void loadParameters() {}
+        void LoadParameters() {}
 
         /**
          * Load parameters from PyTorch state dictionary.
@@ -118,7 +121,7 @@ class RModule_Cat: public RModule {
          * 
          * @param state_dict The state dictionary.
         */
-        void loadParameters([[maybe_unused]] std::map<std::string, std::vector<float>> state_dict) {}
+        void LoadParameters([[maybe_unused]] std::map<std::string, std::vector<float>> state_dict) {}
     private:
         /**
          * Recursively concatenate the inputs along a prespecified dimension.
@@ -140,10 +143,10 @@ class RModule_Cat: public RModule {
          * algorithm, this should be an empty vector.
          * @param out The output.
         */
-        void recursive_cat(std::vector<float> a, std::vector<float> b, std::vector<int> inds, std::shared_ptr<std::vector<float>> out) {
+        void RecursiveCat(std::vector<float> a, std::vector<float> b, std::vector<int> inds, std::shared_ptr<std::vector<float>> out) {
             if (inds.size() == 0) {
                 // We are at the start of the algorithm.
-                if (cdim == 0) {
+                if (fCDim == 0) {
                     // The concatenation dimension is zero, so just append
                     // everything.
                     for (float elem: a) {
@@ -157,7 +160,7 @@ class RModule_Cat: public RModule {
                     // Add first dimension to inds.
                     inds.push_back(0);
                 }
-            } else if (inds.back() >= dims[inds.size() - 1]) {
+            } else if (inds.back() >= fDims[inds.size() - 1]) {
                 // The last index is at the desired output dimension.
                 if (inds.size() == 1) {
                     // Popping would empty the list, so we are done.
@@ -168,24 +171,24 @@ class RModule_Cat: public RModule {
                     inds.pop_back();
                     inds.back()++;
                 }
-            } else if (inds.size() == cdim) {
+            } else if (inds.size() == fCDim) {
                 // Inds has reached the concatenation dimension, so add the
                 // elements of a and b at this position.
-                for (int i = 0; i < shape_a[cdim]; i++) {
-                    append(a, shape_a[cdim], i, inds, out);
+                for (int i = 0; i < fShapeA[fCDim]; i++) {
+                    Append(a, fShapeA[fCDim], i, inds, out);
                 }
-                for (int i = 0; i < shape_b[cdim]; i++) {
-                    append(b, shape_b[cdim], i, inds, out);
+                for (int i = 0; i < fShapeB[fCDim]; i++) {
+                    Append(b, fShapeB[fCDim], i, inds, out);
                 }
                 inds.back()++;
-            } else if (inds.size() < cdim) {
+            } else if (inds.size() < fCDim) {
                 // Concatenation dimension is not reached yet, so add new
                 // dimension to inds.
                 inds.push_back(0);
             } else {
                 throw std::runtime_error("Error in concatenation layer.");
             }
-            recursive_cat(a, b, inds, out);
+            RecursiveCat(a, b, inds, out);
         }
 
         /**
@@ -198,9 +201,9 @@ class RModule_Cat: public RModule {
          * @param inds The current position of the algorithm.
          * @param out The output.
         */
-        void append(std::vector<float> x, int c_shape, int c_count, std::vector<int> inds, std::shared_ptr<std::vector<float>> out) {
+        void Append(std::vector<float> x, int c_shape, int c_count, std::vector<int> inds, std::shared_ptr<std::vector<float>> out) {
             // Find the remaining dimensions after the concatenation dimension.
-            std::vector<int> remaining_dims = std::vector<int>(dims.begin() + inds.size() + 1, dims.end());
+            std::vector<int> remaining_dims = std::vector<int>(fDims.begin() + inds.size() + 1, fDims.end());
 
             // Determine the number of elements to be added.
             int n_add = 1;
@@ -217,7 +220,7 @@ class RModule_Cat: public RModule {
                 // full "round" over this index.
                 int rest = 1;
                 for (std::size_t j = i + 1; j < inds.size(); j++) {
-                    rest *= dims[j];
+                    rest *= fDims[j];
                 }
                 
                 // Compute the number of append loops for the given number of
@@ -233,10 +236,10 @@ class RModule_Cat: public RModule {
             }
         }
     
-        std::size_t cdim;  // Concatenation dimension.
-        std::vector<int> shape_a;  // Shape of input a.
-        std::vector<int> shape_b;  // Shape of input b.
-        std::vector<int> dims;  // Output dimensions.     
+        std::size_t fCDim;  // Concatenation dimension.
+        std::vector<int> fShapeA;  // Shape of input a.
+        std::vector<int> fShapeB;  // Shape of input b.
+        std::vector<int> fDims;  // Output dimensions.     
 };
 
 }  // TMVA.

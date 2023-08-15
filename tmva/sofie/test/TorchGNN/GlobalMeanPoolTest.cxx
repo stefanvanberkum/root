@@ -30,8 +30,8 @@ int main() {
     };
 
     RModel_TorchGNN model = RModel_TorchGNN({"X", "batch"}, {{-1, 2}, {-1}});
-    model.addModule(RModule_GlobalMeanPool("X", "batch"), "out_1");
-    std::vector<float> out = model.forward(X, batch);
+    model.AddModule(RModule_GlobalMeanPool("X", "batch"), "out_1");
+    std::vector<float> out = model.Forward(X, batch);
 
     std::cout << "Expected:" << std::endl;
     for (float x: expected) {

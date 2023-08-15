@@ -1,3 +1,6 @@
+// @(#)root/tmva/sofie:$Id$
+// Author: Stefan van Berkum
+
 /**
  * Addition module.
 */
@@ -21,8 +24,8 @@ class RModule_Add: public RModule {
          * @param b The second argument.
         */
         RModule_Add(std::string a, std::string b) {
-            inputs = {a, b};
-            args = {};
+            fInputs = {a, b};
+            fArgs = {};
         }
 
         /** Destruct the module. */
@@ -33,9 +36,9 @@ class RModule_Add: public RModule {
          * 
          * @returns Result (a + b).
         */
-        std::vector<float> forward() {
-            std::vector<float> a = input_modules[0] -> getOutput();
-            std::vector<float> b = input_modules[1] -> getOutput();
+        std::vector<float> Forward() {
+            std::vector<float> a = fInputModules[0] -> GetOutput();
+            std::vector<float> b = fInputModules[1] -> GetOutput();
 
             int n = a.size();
 
@@ -51,8 +54,8 @@ class RModule_Add: public RModule {
          * 
          * @returns The output shape.
         */
-        std::vector<int> inferShape() {
-            return input_modules[0] -> getShape();
+        std::vector<int> InferShape() {
+            return fInputModules[0] -> GetShape();
         }
 
         /**
@@ -60,7 +63,7 @@ class RModule_Add: public RModule {
          * 
          * @returns The name of the operation.
         */
-        std::string_view getOperation() {
+        std::string_view GetOperation() {
             return "Add";
         }
 
@@ -71,14 +74,14 @@ class RModule_Add: public RModule {
          * 
          * @param dir Save directory.
          */
-        void saveParameters([[maybe_unused]] std::string dir) {}
+        void SaveParameters([[maybe_unused]] std::string dir) {}
 
         /**
          * Load saved parameters.
          * 
          * Does nothing for this module.
         */
-        void loadParameters() {}
+        void LoadParameters() {}
 
         /**
          * Load parameters from PyTorch state dictionary.
@@ -87,7 +90,7 @@ class RModule_Add: public RModule {
          * 
          * @param state_dict The state dictionary.
         */
-        void loadParameters([[maybe_unused]] std::map<std::string, std::vector<float>> state_dict) {}
+        void LoadParameters([[maybe_unused]] std::map<std::string, std::vector<float>> state_dict) {}
 };
 
 }  // TMVA.

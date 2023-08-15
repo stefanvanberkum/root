@@ -1,3 +1,6 @@
+// @(#)root/tmva/sofie:$Id$
+// Author: Stefan van Berkum
+
 /**
  * Input module.
  * 
@@ -24,11 +27,11 @@ class RModule_Input: public RModule {
          * @param input_shape The shape of the input. 
         */
         RModule_Input(std::vector<int> input_shape) {
-            in_shape = input_shape;
-            wildcard = std::find(input_shape.begin(), input_shape.end(), -1) - input_shape.begin();
+            fInShape = input_shape;
+            fWildcard = std::find(input_shape.begin(), input_shape.end(), -1) - input_shape.begin();
             
-            inputs = {};  // No previous inputs to this module.
-            args = {};
+            fInputs = {};  // No previous inputs to this module.
+            fArgs = {};
         }
 
         /** Destruct the module. */
@@ -39,8 +42,8 @@ class RModule_Input: public RModule {
          * 
          * @param input The input.
         */
-        void setParams(std::vector<float> input) {
-            in = input;
+        void SetParams(std::vector<float> input) {
+            fIn = input;
         }
 
         /**
@@ -48,8 +51,8 @@ class RModule_Input: public RModule {
          * 
          * @returns The input.
         */
-        std::vector<float> forward() {
-            return in;
+        std::vector<float> Forward() {
+            return fIn;
         }
 
         /**
@@ -60,15 +63,15 @@ class RModule_Input: public RModule {
          * 
          * @returns The output shape.
         */
-        std::vector<int> inferShape() {
+        std::vector<int> InferShape() {
             int cprod = 1;
-            for (std::size_t i = 0; i < in_shape.size(); i++) {
-                if (i != wildcard) {
-                    cprod *= in_shape[i];
+            for (std::size_t i = 0; i < fInShape.size(); i++) {
+                if (i != fWildcard) {
+                    cprod *= fInShape[i];
                 }
             }
-            std::vector<int> shape = in_shape;
-            shape[wildcard] = in.size() / cprod;
+            std::vector<int> shape = fInShape;
+            shape[fWildcard] = fIn.size() / cprod;
             return shape;
         }
 
@@ -77,7 +80,7 @@ class RModule_Input: public RModule {
          * 
          * @returns The name of the operation.
         */
-        std::string_view getOperation() {
+        std::string_view GetOperation() {
             return "Input";
         }
 
@@ -88,14 +91,14 @@ class RModule_Input: public RModule {
          * 
          * @param dir Save directory.
          */
-        void saveParameters([[maybe_unused]] std::string dir) {}
+        void SaveParameters([[maybe_unused]] std::string dir) {}
 
         /**
          * Load saved parameters.
          * 
          * Does nothing for this module.
         */
-        void loadParameters() {}
+        void LoadParameters() {}
 
         /**
          * Load parameters from PyTorch state dictionary.
@@ -104,11 +107,11 @@ class RModule_Input: public RModule {
          * 
          * @param state_dict The state dictionary.
         */
-        void loadParameters([[maybe_unused]] std::map<std::string, std::vector<float>> state_dict) {}
+        void LoadParameters([[maybe_unused]] std::map<std::string, std::vector<float>> state_dict) {}
     private:
-        std::size_t wildcard;  // Index of the wildcard dimension.
-        std::vector<float> in;  // Input.
-        std::vector<int> in_shape;  // Input shape.
+        std::size_t fWildcard;  // Index of the wildcard dimension.
+        std::vector<float> fIn;  // Input.
+        std::vector<int> fInShape;  // Input shape.
 };
 
 }  // TMVA.

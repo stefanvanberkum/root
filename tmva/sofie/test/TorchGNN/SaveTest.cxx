@@ -17,9 +17,9 @@ int main() {
     std::vector<float> c = {0, 0.5, 0, 0.5};
 
     RModel_TorchGNN model = RModel_TorchGNN({"a", "b", "c"}, {{-1}, {-1}, {-1}});
-    model.addModule(RModule_Add("a", "b"), "out_1");
-    model.addModule(RModule_Add("out_1", "c"), "out_2");
-    model.save("/home/stefan/root-model", "model", true);
+    model.AddModule(RModule_Add("a", "b"), "out_1");
+    model.AddModule(RModule_Add("out_1", "c"), "out_2");
+    model.Save("/home/stefan/root-model", "Model", true);
 
     return 0;
 }
