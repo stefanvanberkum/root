@@ -34,12 +34,11 @@ class RModule_Softmax: public RModule {
          * Apply the softmax operation exp(x_i) / sum(exp(x_j)).
          * 
          * The sum is taken over the last dimension.
-         * 
-         * @returns Result exp(x_i) / sum(exp(x_j)).
         */
-        std::vector<float> Forward() {
-            std::vector<float> x = fInputModules[0] -> GetOutput();
+        void Forward() {
+            const std::vector<float>& x = fInputModules[0] -> GetOutput();
             int last_dim = fInputModules[0] -> GetShape().back();
+            fOutput = x;
 
             for (std::size_t i = 0; i < x.size(); i += last_dim) {
                 float exps[last_dim];
@@ -49,10 +48,9 @@ class RModule_Softmax: public RModule {
                     sum += exps[j - i];
                 }
                 for (std::size_t j = i; j < i + last_dim; j++) {
-                    x[j] = exps[j - i] / sum;
+                    fOutput[j] = exps[j - i] / sum;
                 }
             }
-            return x;
         }
 
         /**

@@ -50,13 +50,10 @@ class RModule_Linear: public RModule {
         /**
          * Applies the linear transformation (y = Ax + b) to each element in the
          * input.
-         * 
-         * @returns Result (Ax + b) for each element.
         */
-        std::vector<float> Forward() {
-            std::vector<float> in = fInputModules[0] -> GetOutput();
-            std::vector<float> out;
-            out.reserve(fNumOut);
+        void Forward() {
+            const std::vector<float>& in = fInputModules[0] -> GetOutput();
+            
 
             if (fRowDim > 1) {
                 // Perform matrix multiplications (Y = XA^T + 1b^T := XA^T + B).
@@ -70,20 +67,20 @@ class RModule_Linear: public RModule {
                     // Get input matrix.
                     std::vector<float> X(in.begin() + i, in.begin() + i + fRowDim * fInputFeatures);
 
-                    std::vector<float> B(fRowDim * fOutputFeatures, 0); 
+                    fOutput = std::vector<float>(fRowDim * fOutputFeatures, 0);  // cblas sets (B = XA^T + B).
                     if (fIncludeBias) {
                         // Construct bias matrix (B = 1b^T).
                         std::vector<float> one(fRowDim, 1);
-                        cblas_sger(CblasRowMajor, fRowDim, fOutputFeatures, 1, one.data(), 1, fB.data(), 1, B.data(), fOutputFeatures);
+                        cblas_sger(CblasRowMajor, fRowDim, fOutputFeatures, 1, one.data(), 1, fB.data(), 1, fOutput.data(), fOutputFeatures);
                     }
 
                     // Perform matrix multiplication (Y = XA^T + B).
-                    cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasTrans, m, n, k, 1, X.data(), k, fA.data(), k, 1, B.data(), n);
-                    for (float elem: B) {  // cblas sets (B = XA^T + B).
-                        out.push_back(elem);
-                    }
+                    cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasTrans, m, n, k, 1, X.data(), k, fA.data(), k, 1, fOutput.data(), n);
                 }
             } else {
+                fOutput.clear();
+                fOutput.reserve(fNumOut);
+
                 // Perform matrix-vector multiplications (y = Ax + b).
                 // A, shape (n, m) -> (output_features, input_features).
                 // x, shape (m, 1) -> (input_features, 1).
@@ -100,11 +97,10 @@ class RModule_Linear: public RModule {
                     // Perform matrix-vector multiplication (y = Ax + b).
                     cblas_sgemv(CblasRowMajor, CblasNoTrans, n, m, 1, fA.data(), m, x.data(), 1, 1, y.data(), 1);
                     for (float elem: y) {  // cblas sets (b = Ax + b).
-                        out.push_back(elem);
+                        fOutput.push_back(elem);
                     }
                 }
             }
-            return out;
         }
 
         /**

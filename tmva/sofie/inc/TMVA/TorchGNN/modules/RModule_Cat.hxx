@@ -43,15 +43,13 @@ class RModule_Cat: public RModule {
 
         /**
          * Concatenate the inputs.
-         * 
-         * @returns The concatenated array.
         */
-        std::vector<float> Forward() {
-            std::vector<float> a = fInputModules[0] -> GetOutput();
-            std::vector<float> b = fInputModules[1] -> GetOutput();
+        void Forward() {
+            const std::vector<float>& a = fInputModules[0] -> GetOutput();
+            const std::vector<float>& b = fInputModules[1] -> GetOutput();
             std::shared_ptr<std::vector<float>> out = std::make_shared<std::vector<float>>();
             RecursiveCat(a, b, {}, out);
-            return *out;
+            fOutput = *out;
         }
 
         /**

@@ -36,18 +36,16 @@ class RModule_GlobalMeanPool: public RModule {
 
         /**
          * Apply the global mean pooling operation.
-         * 
-         * @returns The pooled output.
         */
-        std::vector<float> Forward() {
-            std::vector<float> x = fInputModules[0] -> GetOutput();
-            std::vector<float> batch_float = fInputModules[1] -> GetOutput();
+        void Forward() {
+            const std::vector<float>& x = fInputModules[0] -> GetOutput();
+            const std::vector<float>& batch_float = fInputModules[1] -> GetOutput();
             std::vector<int> batch(batch_float.begin(), batch_float.end());
 
             int n_unique = fOutShape[0];
             int n_features = fOutShape[1];
             
-            std::vector<float> out = std::vector<float>(n_unique * n_features);
+            fOutput = std::vector<float>(n_unique * n_features);
 
             // TODO: This approach might lead to overflow for large feature
             // values or many nodes. Should we work in logs or use Welford's
@@ -60,7 +58,7 @@ class RModule_GlobalMeanPool: public RModule {
                 int out_start = batch[i] * n_features;
 
                 for (int j = 0; j < n_features; j++) {
-                    out[out_start + j] += x[x_start + j];
+                    fOutput[out_start + j] += x[x_start + j];
                 }
                 counts[batch[i]]++;
             }
@@ -69,10 +67,9 @@ class RModule_GlobalMeanPool: public RModule {
             for (int i = 0; i < n_unique; i++) {
                 int out_start = i * n_features;
                 for (int j = 0; j < n_features; j++) {
-                    out[out_start + j] /= counts[i];
+                    fOutput[out_start + j] /= counts[i];
                 }
             }
-            return out;
         }
 
         /**

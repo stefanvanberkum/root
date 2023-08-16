@@ -5,7 +5,8 @@
  * Base class for RModule objects used in GNNs.
  * 
  * Modules define the operations that can be performed in a forward pass. They
- * can be layers, activations, or generic operations.
+ * can be layers, activations, or generic operations. Each module defines a
+ * forward method that updates fOutput (the output of the last call).
  * 
  * IMPORTANT: Besides the virtual methods, each RModule should assign its inputs
  * to the class variable "fInputs" and other arguments to the class variable
@@ -51,7 +52,7 @@ class RModule {
         */
         void Execute() {
             fOutShape = InferShape();  // Infer shape on the fly. TODO: Test impact on performance and possibly execute once for static models.
-            fOutput = Forward();
+            Forward();
         }
 
         /**
@@ -85,7 +86,7 @@ class RModule {
          * 
          * @returns The output of the last call.
         */
-        std::vector<float> GetOutput() {return fOutput;}
+        const std::vector<float>& GetOutput() const {return fOutput;}
 
         /**
          * Get the output shape of the last call to this module.
@@ -94,7 +95,7 @@ class RModule {
         */
         std::vector<int> GetShape() {return fOutShape;}
 
-        virtual std::vector<float> Forward() = 0;  // Forward method to be implemented by each module.
+        virtual void Forward() = 0;  // Forward method to be implemented by each module.
 
         virtual std::vector<int> InferShape() = 0;  // Output shape inference to be implemented by each module.
 
@@ -110,9 +111,8 @@ class RModule {
         std::vector<std::shared_ptr<RModule>> fInputModules;  // Vector of input modules.
         std::vector<std::string> fInputs;  // Input names.
         std::vector<std::string> fArgs;  // Other arguments.
-        std::vector<int> fOutShape;  // Output shape of last call.
-    private:
         std::vector<float> fOutput;  // Output of last call.
+        std::vector<int> fOutShape;  // Output shape of last call.   
 };
 
 }  // TMVA.

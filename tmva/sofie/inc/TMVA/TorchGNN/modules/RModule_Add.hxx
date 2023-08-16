@@ -33,18 +33,15 @@ class RModule_Add: public RModule {
 
         /**
          * Add the arguments a and b.
-         * 
-         * @returns Result (a + b).
         */
-        std::vector<float> Forward() {
-            std::vector<float> a = fInputModules[0] -> GetOutput();
-            std::vector<float> b = fInputModules[1] -> GetOutput();
+        void Forward() {
+            const std::vector<float>& a = fInputModules[0] -> GetOutput();
+            const std::vector<float>& b = fInputModules[1] -> GetOutput();
+            fOutput = b;
 
             int n = a.size();
 
-            cblas_saxpy(n, 1, a.data(), 1, b.data(), 1);
-
-            return b;
+            cblas_saxpy(n, 1, a.data(), 1, fOutput.data(), 1);
         }
 
         /**

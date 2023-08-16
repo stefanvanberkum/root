@@ -33,19 +33,16 @@ class RModule_ReLU: public RModule {
 
         /**
          * Apply the ReLU operation min(0, x).
-         * 
-         * @returns Result min(0, x).
         */
-        std::vector<float> Forward() {
-            std::vector<float> x = fInputModules[0] -> GetOutput();
+        void Forward() {
+            const std::vector<float>& x = fInputModules[0] -> GetOutput();
+            fOutput = x;
 
             for (std::size_t i = 0; i < x.size(); i++) {
-                if (x[i] < 0) {
-                    x[i] = 0;
+                if (fOutput[i] < 0) {
+                    fOutput[i] = 0;
                 }
             }
-
-            return x;
         }
 
         /**

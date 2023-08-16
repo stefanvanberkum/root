@@ -93,12 +93,10 @@ class RModule_GCNConv: public RModule {
 
         /**
          * Applies the graph convolution operation to each node.
-         * 
-         * @returns The updated feature matrix.
         */
-        std::vector<float> Forward() {
-            std::vector<float> X = fInputModules[0] -> GetOutput();
-            std::vector<float> edge_index = fInputModules[1] -> GetOutput();
+        void Forward() {
+            const std::vector<float>& X = fInputModules[0] -> GetOutput();
+            const std::vector<float>& edge_index = fInputModules[1] -> GetOutput();
 
             std::size_t n_nodes = X.size() / fInputFeatures;
             std::size_t n_edges = edge_index.size() / 2;
@@ -109,8 +107,6 @@ class RModule_GCNConv: public RModule {
             } else {
                 edge_weight = std::vector<float>(n_edges, 1);
             }
-            std::vector<float> out;
-            out.reserve(n_nodes * fOutputFeatures);
             std::vector<float> X_agg;
             std::vector<float> degree;
             
@@ -159,9 +155,10 @@ class RModule_GCNConv: public RModule {
                 
                 int x_start = source * fInputFeatures;
                 int x_agg_start = target * fInputFeatures;
+                float norm = edge_weight[i] / std::sqrt(degree[source] * degree[target]);
                 for (int j = 0; j < fInputFeatures; j++) {
                     if (fNormalization) {
-                        X_agg[x_agg_start + j] += edge_weight[i] / std::sqrt(degree[source] * degree[target]) * X[x_start + j];
+                        X_agg[x_agg_start + j] += norm * X[x_start + j];
                     } else {
                         X_agg[x_agg_start + j] += edge_weight[i] * X[x_start + j];
                     }
@@ -178,19 +175,15 @@ class RModule_GCNConv: public RModule {
             int k = fInputFeatures;
             int n = fOutputFeatures;
 
-            std::vector<float> B(n_nodes * fOutputFeatures, 0); 
+            fOutput = std::vector<float>(n_nodes * fOutputFeatures, 0);  // cblas sets (B = X_agg * W^T + B).
             if (fIncludeBias) {
                 // Construct bias matrix (B = 1b^T).
                 std::vector<float> one(n_nodes, 1);
-                cblas_sger(CblasRowMajor, n_nodes, fOutputFeatures, 1, one.data(), 1, fB.data(), 1, B.data(), fOutputFeatures);
+                cblas_sger(CblasRowMajor, n_nodes, fOutputFeatures, 1, one.data(), 1, fB.data(), 1, fOutput.data(), fOutputFeatures);
             }
 
             // Perform matrix multiplication (Y = X_agg * W^T + B).
-            cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasTrans, m, n, k, 1, X_agg.data(), k, fW.data(), k, 1, B.data(), n);
-            for (float elem: B) {  // cblas sets (B = X_agg * W^T + B).
-                out.push_back(elem);
-            }
-            return out;
+            cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasTrans, m, n, k, 1, X_agg.data(), k, fW.data(), k, 1, fOutput.data(), n);
         }
 
         /**

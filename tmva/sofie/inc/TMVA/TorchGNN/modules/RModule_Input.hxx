@@ -43,17 +43,13 @@ class RModule_Input: public RModule {
          * @param input The input.
         */
         void SetParams(std::vector<float> input) {
-            fIn = input;
+            fOutput = input;
         }
 
         /**
-         * Simply forward the input.
-         * 
-         * @returns The input.
+         * Does nothing for this module.
         */
-        std::vector<float> Forward() {
-            return fIn;
-        }
+        void Forward() {}
 
         /**
          * Infer the output shape.
@@ -71,7 +67,7 @@ class RModule_Input: public RModule {
                 }
             }
             std::vector<int> shape = fInShape;
-            shape[fWildcard] = fIn.size() / cprod;
+            shape[fWildcard] = fOutput.size() / cprod;
             return shape;
         }
 
@@ -110,7 +106,6 @@ class RModule_Input: public RModule {
         void LoadParameters([[maybe_unused]] std::map<std::string, std::vector<float>> state_dict) {}
     private:
         std::size_t fWildcard;  // Index of the wildcard dimension.
-        std::vector<float> fIn;  // Input.
         std::vector<int> fInShape;  // Input shape.
 };
 

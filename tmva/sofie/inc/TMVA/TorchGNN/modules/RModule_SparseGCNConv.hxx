@@ -99,16 +99,17 @@ class RModule_SparseGCNConv: public RModule {
          * 
          * @returns The updated feature matrix.
         */
-        std::vector<float> Forward() {
-            std::vector<float> X = fInputModules[0] -> GetOutput();
-            std::vector<float> edge_index_f = fInputModules[1] -> GetOutput();
+        void Forward() {
+            const std::vector<float>& X_const = fInputModules[0] -> GetOutput();
+            std::vector<float> X = X_const;
+            const std::vector<float>& edge_index_f = fInputModules[1] -> GetOutput();
 
             std::size_t n_nodes = X.size() / fInputFeatures;
             std::size_t n_edges = edge_index_f.size() / 2;
             
             std::vector<float> edge_weight;
             if (fEdgeWeights) {
-                std::vector<float> edge_weight_f = fInputModules[2] -> GetOutput();
+                const std::vector<float>& edge_weight_f = fInputModules[2] -> GetOutput();
             } else {
                 edge_weight = std::vector<float>(n_edges, 1);
             }
@@ -159,8 +160,7 @@ class RModule_SparseGCNConv: public RModule {
                 Eigen::Map<Eigen::RowVectorXf> bias(fB.data(), fOutputFeatures);
                 out = out.rowwise() + bias;
             }
-
-            return std::vector<float>(out.data(), out.data() + n_nodes * fOutputFeatures);
+            fOutput = std::vector<float>(out.data(), out.data() + n_nodes * fOutputFeatures);
         }
 
         /**

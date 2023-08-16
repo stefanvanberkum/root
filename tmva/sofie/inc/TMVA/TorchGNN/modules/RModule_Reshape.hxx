@@ -65,12 +65,10 @@ class RModule_Reshape: public RModule {
          * Simply forward the input.
          * 
          * Reshaping is done through the inferShape() method.
-         * 
-         * @returns The input.
         */
-        std::vector<float> Forward() {
-            std::vector<float> x = fInputModules[0] -> GetOutput();
-            return x;
+        void Forward() {
+            const std::vector<float>& x = fInputModules[0] -> GetOutput();
+            fOutput = x;
         }
 
         /**
