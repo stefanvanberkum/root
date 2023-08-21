@@ -36,12 +36,11 @@ class RModule_ReLU: public RModule {
         */
         void Forward() {
             const std::vector<float>& x = fInputModules[0] -> GetOutput();
-            fOutput = x;
+            std::size_t n = x.size();
+            fOutput.resize(n);
 
-            for (std::size_t i = 0; i < x.size(); i++) {
-                if (fOutput[i] < 0) {
-                    fOutput[i] = 0;
-                }
+            for (std::size_t i = 0; i < n; i++) {
+                fOutput[i] = (x[i] < 0) ? 0 : x[i];
             }
         }
 
